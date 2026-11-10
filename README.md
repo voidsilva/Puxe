@@ -64,7 +64,16 @@ O que esperar do plano grátis:
 
 Se o servidor falhar, o próprio PUXA oferece abrir o link no cobalt.tools ou gerar o comando do yt-dlp.
 
-## Liberando o YouTube com cookies
+## YouTube pela API paga (Vercel + Apify)
+
+O YouTube bloqueia servidores de nuvem, então os links dele não passam pelo cobalt. Eles vão para uma função na Vercel ([`api/youtube.js`](api/youtube.js)) que usa o ator [YouTube Download API](https://apify.com/johnvc/youtube-download-api) da Apify. A chave fica guardada na Vercel e nunca chega ao navegador.
+
+1. Crie uma conta na [Apify](https://apify.com) (o plano grátis dá um crédito mensal) e copie o token em **Settings → API & Integrations**.
+2. Na Vercel, projeto `puxe` → **Settings → Environment Variables**, crie `APIFY_TOKEN` com o token e faça um novo deploy.
+
+A cobrança é por minuto de vídeo baixado. A função limita em 1080p e 60 minutos por vídeo.
+
+## Liberando o YouTube com cookies (alternativa grátis)
 
 1. Crie uma conta Google nova só para isso. Nunca use a sua conta pessoal: o YouTube pode bloquear a conta usada em servidor.
 2. Numa janela anônima, entre nessa conta e abra o youtube.com.

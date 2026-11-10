@@ -2344,7 +2344,30 @@ const limparAcoes = tarefa => {
 
 // O cobalt responde de três jeitos: tunnel/redirect (um arquivo), picker (galeria
 // de fotos e vídeos, comum no TikTok e Instagram) ou local-processing (faixas separadas).
+// O YouTube bloqueia servidores de nuvem, então ele vai pela API paga hospedada na Vercel
+// (pasta api/ do repositório). As outras plataformas continuam no cobalt.
+const API_YOUTUBE = 'https://puxe-seven.vercel.app';
+async function baixarDoYoutube(tarefa) {
+  atualizarCartao(tarefa, 'analisando', 'Preparando o vídeo do YouTube (pode levar até 1 minuto)…');
+  const qualidade = config.vq === 'max' ? '1080' : config.vq;
+  const params = new URLSearchParams({
+    url: tarefa.url,
+    formato: tarefa.modo === 'audio' ? 'audio' : 'video',
+    qualidade,
+  });
+  const resposta = await fetch(`${API_YOUTUBE}/api/youtube?${params}`, {
+    signal: tarefa.controle.signal,
+  });
+  const dados = await resposta.json().catch(() => ({}));
+  if (!resposta.ok || !dados.url) throw new Error(dados.erro || 'Não deu para baixar do YouTube agora.');
+  if (tarefa.cancelada) return;
+  tarefa.alternativa = API_YOUTUBE + dados.proxy;
+  tarefa.cartao.querySelector('.jt').textContent = dados.nome;
+  await baixarResultado(tarefa, dados.url, dados.nome);
+}
+
 async function executarTarefa(tarefa) {
+  if (tarefa.plataforma?.id === 'yt') return baixarDoYoutube(tarefa);
   atualizarCartao(tarefa, 'analisando', 'Consultando o servidor…');
   const lento = setTimeout(
     () =>
@@ -2436,6 +2459,12 @@ async function baixarResultado(tarefa, url, nome) {
     });
   } catch (e) {
     if (e.name === 'AbortError') throw e;
+    // Arquivo do YouTube: se o link direto exigir chave, passa pelo repasse da Vercel.
+    if (tarefa.alternativa) {
+      const alternativa = tarefa.alternativa;
+      tarefa.alternativa = null;
+      return baixarResultado(tarefa, alternativa, nome);
+    }
     tarefa.linkDireto = url;
     tarefa.nome = nome;
     atualizarCartao(
