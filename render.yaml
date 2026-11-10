@@ -1,0 +1,25 @@
+# Servidor de download do PUXA: o cobalt (https://github.com/imputnet/cobalt) rodando no Render.
+# Publique uma vez e todo mundo que abrir o site baixa sem instalar nada.
+#
+# Deploy em um clique: https://render.com/deploy?repo=https://github.com/voidsilva/Puxe
+services:
+  - type: web
+    name: puxe-cobalt
+    runtime: image
+    plan: free
+    image:
+      url: ghcr.io/imputnet/cobalt:latest
+    envVars:
+      # Endereço público do servidor. Se o Render der outro nome no deploy,
+      # ajuste aqui e no SERVIDOR_PADRAO do index.html.
+      - key: API_URL
+        value: https://puxe-cobalt.onrender.com/
+      # O cobalt escuta na 9000; o Render encaminha o tráfego para essa porta.
+      - key: PORT
+        value: "9000"
+      # Só o site do PUXA consegue usar o servidor pelo navegador. Evita que outros
+      # sites gastem a sua cota.
+      - key: CORS_WILDCARD
+        value: "0"
+      - key: CORS_URL
+        value: https://voidsilva.github.io
