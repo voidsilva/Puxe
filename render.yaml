@@ -23,3 +23,7 @@ services:
         value: "0"
       - key: CORS_URL
         value: https://voidsilva.github.io
+      # YouTube: depois de criar o Secret File cookies.json no painel do Render
+      # (veja "liberar o YouTube com cookies" na aba Config do site), descomente:
+      # - key: COOKIE_PATH
+      #   value: /etc/secrets/cookies.json

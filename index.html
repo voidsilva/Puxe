@@ -1593,6 +1593,19 @@ input[type="range"] {
       <p class="small muted">Se o navegador perguntar sobre acesso à rede local, permita. Quando um download falha, aparecem atalhos para o cobalt.tools e para a aba yt-dlp.</p>
     </div>
   </div>
+  <details class="box adv" style="margin-top:12px">
+    <summary>Para o dono do servidor: liberar o YouTube com cookies</summary>
+    <ol class="steps" style="margin-top:14px">
+      <li>Crie uma conta Google nova só para isso. <strong>Nunca use a sua conta pessoal</strong>: o YouTube pode bloquear a conta usada em servidor.</li>
+      <li>Abra uma janela anônima, entre nessa conta e abra o youtube.com.</li>
+      <li>Exporte os cookies com a extensão <a href="https://github.com/kairi003/Get-cookies.txt-LOCALLY" target="_blank" rel="noopener">Get cookies.txt LOCALLY</a> e feche a janela anônima <strong>sem sair da conta</strong> (sair invalida os cookies).</li>
+      <li>Cole o arquivo abaixo e clique em Gerar. A conversão é feita aqui no navegador, nada é enviado.</li>
+      <li>No Render, abra o serviço <code>puxe-cobalt</code> → <strong>Environment</strong>. Em <strong>Secret Files</strong>, crie o arquivo <code>cookies.json</code> com o conteúdo gerado. Em <strong>Environment Variables</strong>, adicione <code>COOKIE_PATH</code> com o valor <code>/etc/secrets/cookies.json</code>. Salve e espere o serviço reiniciar.</li>
+    </ol>
+    <textarea class="inp mono" id="ckIn" rows="5" spellcheck="false" placeholder="Cole aqui o cookies.txt (ou o JSON exportado de outra extensão)"></textarea>
+    <div class="row" style="margin-top:10px"><button class="btn p" id="ckGo">Gerar cookies.json</button><button class="btn" data-copy="#ckOut" id="ckCopy" hidden>Copiar</button><span class="small muted" id="ckMsg"></span></div>
+    <pre class="cmd sm" id="ckOut" hidden></pre>
+  </details>
 </section>
 </main>
 </div>
@@ -2077,7 +2090,8 @@ const MENSAGENS_ERRO = {
   'fetch.short_link': 'Não deu para abrir o link curto.',
   'fetch.critical': 'Erro crítico na instância.',
   'fetch.fail': 'A instância não conseguiu buscar o conteúdo.',
-  'youtube.login': 'O YouTube pediu login para a instância (precisa de cookies).',
+  'youtube.login':
+    'O YouTube está bloqueando o servidor de download agora. Tente mais tarde; as outras plataformas continuam funcionando.',
   'youtube.decipher': 'O YouTube mudou algo. Atualize a instância.',
   'youtube.token_expired': 'Token do YouTube expirou na instância.',
   'youtube.no_matching_format': 'Nenhum formato compatível. Troque codec ou qualidade.',
@@ -2722,13 +2736,52 @@ $('#testInst').onclick = async b => {
     row.className = 'hi';
     row.innerHTML = `<span class="badge">…</span><div class="u">${escaparHtml(instancia)}<small>testando…</small></div><span></span>`;
     saida.append(row);
-    const r = await testarInstancia(instancia, 7000);
+    const r = await testarInstancia(instancia, 90000);
     row.innerHTML = r.ok
       ? `<span class="badge" style="--c:var(--ok)">online</span><div class="u">${escaparHtml(instancia)}<small>cobalt v${escaparHtml(r.v)} · ${r.ms} ms · ${r.sv.length} plataformas</small></div><span></span>`
       : `<span class="badge" style="--c:var(--err)">falhou</span><div class="u">${escaparHtml(instancia)}<small>${escaparHtml(r.err)}</small></div><span></span>`;
   }
   $('#testInst').disabled = false;
   atualizarStatusInstancia();
+};
+
+// Converte o cookies.txt (formato Netscape) ou o JSON de extensões no cookies.json do cobalt.
+// Só os cookies do youtube.com entram. Tudo acontece aqui, nada sai do navegador.
+function gerarCookiesCobalt(texto) {
+  let lista = [];
+  const t = texto.trim();
+  if (t.startsWith('[')) {
+    lista = JSON.parse(t).map(c => ({ dominio: c.domain || '', nome: c.name, valor: c.value }));
+  } else {
+    for (let linha of t.split(/\r?\n/)) {
+      if (linha.startsWith('#HttpOnly_')) linha = linha.slice(10);
+      else if (!linha || linha.startsWith('#')) continue;
+      const p = linha.split('\t');
+      if (p.length >= 7) lista.push({ dominio: p[0], nome: p[5], valor: p[6] });
+    }
+  }
+  const doYoutube = lista.filter(c => /(^|\.)youtube\.com$/i.test(c.dominio) && c.nome);
+  if (!doYoutube.length) throw new Error('Nenhum cookie do youtube.com encontrado.');
+  const nomes = doYoutube.map(c => c.nome);
+  const logado = nomes.some(n => /SAPISID|__Secure-3PSID|^SID$/.test(n));
+  const cabecalho = doYoutube.map(c => `${c.nome}=${c.valor}`).join('; ');
+  return { json: JSON.stringify({ youtube: [cabecalho] }, null, 2), total: doYoutube.length, logado };
+}
+$('#ckGo').onclick = () => {
+  const msg = $('#ckMsg');
+  try {
+    const r = gerarCookiesCobalt($('#ckIn').value);
+    $('#ckOut').textContent = r.json;
+    $('#ckOut').hidden = false;
+    $('#ckCopy').hidden = false;
+    msg.textContent = r.logado
+      ? `${r.total} cookies do YouTube. Pronto para colar no Render.`
+      : `${r.total} cookies, mas nenhum de login. Confira se entrou na conta antes de exportar.`;
+  } catch (e) {
+    $('#ckOut').hidden = true;
+    $('#ckCopy').hidden = true;
+    msg.textContent = e instanceof SyntaxError ? 'Não consegui ler esse JSON.' : e.message;
+  }
 };
 
 // ===== Gerador de comando yt-dlp =====

@@ -59,10 +59,20 @@ Isso é só para quem mantém o site. O arquivo [`render.yaml`](render.yaml) já
 O que esperar do plano grátis:
 
 - **Dorme quando ninguém usa.** Depois de 15 minutos parado, o servidor desliga e leva cerca de 1 minuto para voltar. O site já começa a acordar o servidor assim que abre e avisa o visitante enquanto isso. O plano pago mais barato não dorme.
-- **YouTube pode bloquear.** O YouTube bloqueia de vez em quando servidores de data center. Quando isso acontecer, configure cookies seguindo a [documentação do cobalt](https://github.com/imputnet/cobalt/blob/main/docs/run-an-instance.md). TikTok, Instagram, X e as outras plataformas costumam funcionar normalmente.
+- **YouTube pode bloquear.** O YouTube bloqueia servidores de data center. A saída é dar ao servidor os cookies de uma conta Google descartável (veja abaixo). TikTok, Instagram, X e as outras plataformas funcionam sem isso.
 - **Só o site usa o servidor.** O `render.yaml` libera o servidor apenas para `voidsilva.github.io`, para outros sites não gastarem a sua cota.
 
 Se o servidor falhar, o próprio PUXA oferece abrir o link no cobalt.tools ou gerar o comando do yt-dlp.
+
+## Liberando o YouTube com cookies
+
+1. Crie uma conta Google nova só para isso. Nunca use a sua conta pessoal: o YouTube pode bloquear a conta usada em servidor.
+2. Numa janela anônima, entre nessa conta e abra o youtube.com.
+3. Exporte os cookies com a extensão [Get cookies.txt LOCALLY](https://github.com/kairi003/Get-cookies.txt-LOCALLY) e feche a janela **sem sair da conta**.
+4. No PUXA, abra **Config → Para o dono do servidor**, cole o arquivo e clique em **Gerar cookies.json**. A conversão roda no navegador.
+5. No Render, serviço `puxe-cobalt` → **Environment**: crie o Secret File `cookies.json` com o conteúdo gerado e a variável `COOKIE_PATH` = `/etc/secrets/cookies.json`.
+
+Os cookies expiram de tempos em tempos. Quando o YouTube voltar a bloquear, repita os passos. Mesmo com cookies, o YouTube às vezes continua bloqueando IP de data center.
 
 ## Servidor no seu computador (opcional)
 
