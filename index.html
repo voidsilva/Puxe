@@ -1,0 +1,4568 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PUXA — baixar, cortar e converter vídeo e áudio</title>
+<meta name="theme-color" content="#0A0A0B">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%23FF4A1C'/%3E%3C/svg%3E">
+<style>
+/* PUXA — estilos. Tema escuro único, sem fontes externas para carregar rápido. */
+
+/* ===== Cores, fontes e espaçamentos ===== */
+:root {
+  --bg: #0a0a0b;
+  --s1: #111114;
+  --s2: #18181d;
+  --s3: #212128;
+  --line: #25252c;
+  --line2: #34343c;
+  --tx: #edeae4;
+  --tx2: #a09fa7;
+  --tx3: #6a6971;
+  --rec: #ff4a1c;
+  --rec-ink: #160600;
+  --amb: #ffb020;
+  --ok: #3ddc97;
+  --err: #ff5a5f;
+  --fd: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --fm:
+    ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Roboto Mono", "Liberation Mono",
+    monospace;
+  --pad: clamp(14px, 3vw, 32px);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  color-scheme: dark;
+}
+
+/* ===== Base ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scrollbar-color: var(--line2) transparent;
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--tx);
+  font: 400 15px/1.55 var(--fd);
+  -webkit-font-smoothing: antialiased;
+  accent-color: var(--rec);
+  overflow-x: hidden;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+::selection {
+  background: var(--rec);
+  color: var(--rec-ink);
+}
+:focus-visible {
+  outline: 2px solid var(--amb);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+button {
+  touch-action: manipulation;
+}
+[hidden] {
+  display: none !important;
+}
+svg {
+  flex: none;
+}
+
+/* ===== Topo e navegação ===== */
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px var(--pad);
+  padding-top: calc(12px + env(safe-area-inset-top));
+  background: rgba(10, 10, 11, 0.96);
+  border-bottom: 1px solid var(--line);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  font-size: 21px;
+  color: var(--tx);
+}
+.lamp {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--rec);
+  box-shadow: 0 0 0 3px rgba(255, 74, 28, 0.22);
+}
+body.busy .lamp {
+  animation: blink 1s steps(2) infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0.2;
+  }
+}
+.tabs {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: 1;
+}
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+.tabs button {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: 0;
+  padding: 8px 13px;
+  border-radius: 9px;
+  color: var(--tx2);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tabs button:hover {
+  color: var(--tx);
+  background: var(--s2);
+}
+.tabs button[aria-selected="true"] {
+  color: var(--tx);
+  background: var(--s3);
+}
+.tabs svg,
+.tabs .s,
+.tch {
+  display: none;
+}
+.inst {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 500 12px var(--fm);
+  color: var(--tx2);
+  white-space: nowrap;
+  background: none;
+  border: 1px solid var(--line);
+  padding: 6px 11px;
+  border-radius: 99px;
+  cursor: pointer;
+  margin-left: auto;
+  max-width: 46vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.inst i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tx3);
+  flex: none;
+}
+.inst.ok i {
+  background: var(--ok);
+}
+.inst.bad i {
+  background: var(--err);
+}
+
+/* ===== Estrutura ===== */
+main {
+  padding: 0 var(--pad) 90px;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+.panel {
+  display: none;
+}
+.panel.on {
+  display: block;
+  animation: rise 0.4s var(--ease);
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* ===== Capa da aba Baixar ===== */
+.hero {
+  position: relative;
+  isolation: isolate;
+  padding: clamp(30px, 8vh, 100px) 0 24px;
+}
+/* Anéis de fundo feitos só com CSS: nenhum script rodando, nenhuma imagem. */
+.deco {
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  top: 0;
+  bottom: -40px;
+  /* vai de ponta a ponta da tela, mesmo com o conteúdo centralizado */
+  left: calc(50% - 50vw);
+  right: calc(50% - 50vw);
+}
+.deco::before,
+.deco::after {
+  content: "";
+  position: absolute;
+  right: 6%;
+  top: 32%;
+  transform: translate(50%, -50%);
+  border-radius: 50%;
+}
+.deco::before {
+  width: min(1000px, 170vw);
+  height: min(1000px, 170vw);
+  background: repeating-radial-gradient(
+    circle,
+    transparent 0 37px,
+    rgba(237, 234, 228, 0.07) 38px 39px
+  );
+  -webkit-mask-image: radial-gradient(circle, #000 15%, transparent 68%);
+  mask-image: radial-gradient(circle, #000 15%, transparent 68%);
+}
+.deco::after {
+  width: min(468px, 80vw);
+  height: min(468px, 80vw);
+  border: 1px solid rgba(255, 74, 28, 0.45);
+}
+.hero h1 {
+  margin: 0;
+  font-weight: 800;
+  font-size: clamp(2.2rem, 1rem + 6vw, 6.4rem);
+  line-height: 0.92;
+  letter-spacing: -0.05em;
+}
+.hero h1 b {
+  color: var(--rec);
+  font-weight: inherit;
+}
+.hero h1 span {
+  display: block;
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--tx);
+}
+.lede {
+  max-width: 58ch;
+  color: var(--tx2);
+  font-size: clamp(14.5px, 0.6vw + 12px, 18px);
+  margin: 20px 0 28px;
+}
+.deck {
+  background: var(--s1);
+  border: 1px solid var(--line2);
+  border-radius: 18px;
+  padding: 10px;
+  transition: border-color 0.2s;
+}
+.deck:focus-within,
+.deck.drag {
+  border-color: var(--tx3);
+}
+.inrow {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 48px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--s2);
+  font: 600 12px var(--fm);
+  color: var(--tx2);
+  min-width: 92px;
+}
+.chip i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c, var(--tx3));
+}
+#url {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  max-height: 180px;
+  resize: none;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  padding: 13px 6px;
+  font: 500 15px/1.4 var(--fm);
+  color: var(--tx);
+}
+#url::placeholder {
+  color: var(--tx3);
+}
+.ctrls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: center;
+  padding: 12px 4px 2px;
+  border-top: 1px solid var(--line);
+  margin-top: 10px;
+}
+.note {
+  margin: 12px 2px 0;
+  font-size: 13px;
+  color: var(--tx2);
+}
+.note a {
+  color: var(--amb);
+  cursor: pointer;
+}
+
+/* ===== Botões e campos ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 15px;
+  border-radius: 10px;
+  border: 1px solid var(--line2);
+  background: var(--s2);
+  color: var(--tx);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.15s var(--ease);
+}
+.btn:hover {
+  border-color: var(--tx3);
+  background: var(--s3);
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.btn.p {
+  background: var(--rec);
+  border-color: var(--rec);
+  color: var(--rec-ink);
+  font-weight: 800;
+}
+.btn.p:hover {
+  background: #ff6538;
+  border-color: #ff6538;
+}
+.btn.lg {
+  height: 48px;
+  padding: 0 22px;
+  font-size: 15px;
+}
+.btn.sm {
+  height: 32px;
+  padding: 0 11px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+.btn.ghost {
+  background: transparent;
+}
+.btn svg {
+  width: 16px;
+  height: 16px;
+}
+.btn[aria-pressed="true"] {
+  border-color: var(--amb);
+  color: var(--amb);
+}
+.seg {
+  display: inline-flex;
+  background: var(--s2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+  max-width: 100%;
+}
+.seg label {
+  position: relative;
+  flex: 1;
+}
+.seg input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.seg span {
+  display: block;
+  text-align: center;
+  padding: 6px 12px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.seg input:checked + span {
+  background: var(--tx);
+  color: var(--bg);
+}
+.seg input:focus-visible + span {
+  outline: 2px solid var(--amb);
+}
+.f {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--tx2);
+}
+.inp,
+.f select,
+.f input {
+  height: 34px;
+  background: var(--s2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  color: var(--tx);
+  font-size: 13px;
+  min-width: 0;
+  max-width: 100%;
+}
+textarea.inp {
+  height: auto;
+  padding: 10px;
+  width: 100%;
+  resize: vertical;
+  line-height: 1.5;
+}
+.mono {
+  font-family: var(--fm);
+}
+select {
+  cursor: pointer;
+}
+.tg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--tx2);
+  cursor: pointer;
+}
+.tg input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+details.adv {
+  width: 100%;
+}
+details.adv summary {
+  cursor: pointer;
+  color: var(--tx2);
+  font-size: 13px;
+  list-style: none;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+}
+details.adv summary::-webkit-details-marker {
+  display: none;
+}
+details.adv summary::before {
+  content: "+";
+  font-family: var(--fm);
+  color: var(--rec);
+  font-weight: 600;
+}
+details[open].adv summary::before {
+  content: "−";
+}
+.advgrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  padding: 12px 0 4px;
+}
+
+/* ===== Cartões de download ===== */
+.jobs {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+}
+.job {
+  background: var(--s1);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  animation: rise 0.35s var(--ease);
+  min-width: 0;
+}
+.job header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: var(--s2);
+  font: 600 11px var(--fm);
+  color: var(--tx);
+  flex: none;
+  white-space: nowrap;
+}
+.badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c, var(--tx3));
+}
+.badge em {
+  font-style: normal;
+  color: var(--tx2);
+}
+.badge.plain::before {
+  display: none;
+}
+.jt {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 14px;
+}
+.x {
+  background: none;
+  border: 0;
+  color: var(--tx3);
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  padding: 4px 9px;
+  border-radius: 6px;
+}
+.x:hover {
+  color: var(--tx);
+  background: var(--s2);
+}
+.bar {
+  height: 3px;
+  background: var(--s3);
+  border-radius: 3px;
+  margin: 12px 0 8px;
+  overflow: hidden;
+}
+.bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--rec);
+  transition: width 0.2s;
+}
+.job[data-s="fila"] .bar i,
+.job[data-s="analisando"] .bar i,
+.bar.ind i {
+  width: 30% !important;
+  animation: ind 1.1s var(--ease) infinite;
+}
+@keyframes ind {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(340%);
+  }
+}
+.job[data-s="pronto"] .bar i,
+.job[data-s="picker"] .bar i,
+.job[data-s="link"] .bar i {
+  background: var(--ok);
+  width: 100%;
+}
+.job[data-s="erro"] .bar i {
+  background: var(--err);
+  width: 100%;
+}
+.jm {
+  margin: 0;
+  font: 500 12.5px/1.5 var(--fm);
+  color: var(--tx2);
+  overflow-wrap: anywhere;
+}
+.job[data-s="erro"] .jm {
+  color: var(--err);
+}
+.jp:not(:empty) {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+.jp video,
+.jp > img {
+  width: auto;
+  max-width: 100%;
+  max-height: min(380px, 60vh);
+  border-radius: 10px;
+  background: #000;
+}
+.jp audio {
+  width: 100%;
+}
+.ja {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ja:not(:empty) {
+  margin-top: 12px;
+}
+.pick {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(132px, 42vw), 1fr));
+  gap: 8px;
+}
+.pk {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--s2);
+  border: 1px solid var(--line);
+  padding-top: 133%;
+}
+.pk.wide {
+  padding-top: 56.25%;
+}
+.pk img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.pk .tg {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+}
+.pk .btn {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+}
+.pk .t {
+  position: absolute;
+  bottom: 10px;
+  left: 8px;
+  font: 600 10px var(--fm);
+  background: rgba(0, 0, 0, 0.72);
+  padding: 2px 6px;
+  border-radius: 5px;
+}
+
+/* ===== Lista de plataformas ===== */
+.plats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 40px;
+  align-items: center;
+}
+.plats b {
+  font: 600 12px var(--fm);
+  color: var(--tx3);
+  margin-right: 6px;
+}
+.plats span {
+  font: 500 12px var(--fm);
+  color: var(--tx2);
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg);
+}
+.plats span::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+/* ===== Seções e caixas ===== */
+.sec-h {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 36px 0 18px;
+}
+.sec-h h2 {
+  margin: 0;
+  font-weight: 800;
+  font-size: clamp(1.8rem, 1rem + 2.8vw, 3.2rem);
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+}
+.sec-h p {
+  margin: 8px 0 0;
+  color: var(--tx2);
+  max-width: 62ch;
+}
+.box {
+  background: var(--s1);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  min-width: 0;
+}
+.box h3 {
+  margin: 0 0 12px;
+  font: 600 12px var(--fm);
+  color: var(--tx2);
+  letter-spacing: 0.02em;
+}
+.box h3:not(:first-child) {
+  margin-top: 20px;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.grid3 {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.95fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+.grid2 {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 12px;
+}
+.tc {
+  font: 600 13px var(--fm);
+  font-variant-numeric: tabular-nums;
+}
+.muted {
+  color: var(--tx2);
+}
+.small {
+  font-size: 12.5px;
+}
+p.small {
+  margin: 10px 0 0;
+}
+kbd {
+  font: 600 11px var(--fm);
+  padding: 1px 6px;
+  border: 1px solid var(--line2);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  color: var(--tx2);
+  white-space: nowrap;
+}
+code {
+  font: 500 0.9em var(--fm);
+  color: var(--amb);
+  overflow-wrap: anywhere;
+}
+
+/* ===== Editor de áudio ===== */
+.wave-wrap {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--s1);
+  overflow: hidden;
+}
+#wave {
+  display: block;
+  width: 100%;
+  height: clamp(150px, 30vh, 260px);
+  cursor: crosshair;
+  touch-action: none;
+}
+.empty {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--tx2);
+  pointer-events: none;
+  padding: 20px;
+  font-size: 14px;
+}
+.empty small {
+  color: var(--tx3);
+}
+.ae-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px 10px;
+  flex-wrap: wrap;
+  margin: 0 0 10px;
+  font: 500 12.5px var(--fm);
+  color: var(--tx2);
+}
+.transport {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+}
+.time-big {
+  font: 600 22px var(--fm);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  min-width: 9.5ch;
+}
+.selin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--tx2);
+  flex-wrap: wrap;
+}
+.selin .inp {
+  width: 104px;
+}
+.push {
+  margin-left: auto;
+}
+.sl {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) 56px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--tx2);
+  margin: 8px 0;
+}
+.sl output {
+  font: 600 12px var(--fm);
+  color: var(--tx);
+  text-align: right;
+}
+input[type="range"] {
+  width: 100%;
+  margin: 0;
+  height: 24px;
+}
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.presets button {
+  background: var(--s2);
+  border: 1px solid var(--line);
+  color: var(--tx2);
+  border-radius: 99px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.presets button:hover {
+  color: var(--tx);
+}
+.presets button.on {
+  background: var(--tx);
+  color: var(--bg);
+  border-color: var(--tx);
+}
+.prog {
+  height: 5px;
+  border-radius: 5px;
+  background: var(--s3);
+  overflow: hidden;
+  margin-top: 12px;
+}
+.prog i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--rec);
+  transition: width 0.15s;
+}
+.vstack {
+  display: grid;
+  gap: 10px;
+}
+
+/* ===== Editor de vídeo ===== */
+.vgrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 12px;
+}
+.player {
+  position: relative;
+  background: #000;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#vid {
+  width: 100%;
+  max-height: 62vh;
+  display: block;
+}
+.tl {
+  position: relative;
+  height: 66px;
+  margin-top: 12px;
+  border-radius: 10px;
+  background: var(--s2);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  touch-action: none;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.tl canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.5;
+}
+.tl .rng {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border: 2px solid var(--amb);
+  border-radius: 9px;
+  background: rgba(255, 176, 32, 0.1);
+  pointer-events: none;
+}
+.tl .hd {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 22px;
+  margin-left: -11px;
+  cursor: ew-resize;
+  z-index: 2;
+}
+.tl .hd::after {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 16px;
+  bottom: 16px;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--amb);
+  pointer-events: none;
+}
+.tl .ph {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--rec);
+  pointer-events: none;
+  z-index: 3;
+}
+.form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  gap: 12px;
+}
+.form label {
+  display: grid;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--tx2);
+  min-width: 0;
+}
+.form .inp {
+  height: 40px;
+  width: 100%;
+}
+.vside .form {
+  grid-template-columns: 1fr 1fr;
+}
+.vside .form .full {
+  grid-column: 1/-1;
+}
+
+/* ===== yt-dlp, histórico e config ===== */
+.cmd {
+  background: #050506;
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  padding: 16px;
+  font: 500 13.5px/1.65 var(--fm);
+  color: var(--tx);
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 12px 0;
+}
+.cmd.sm {
+  font-size: 12.5px;
+  padding: 12px;
+  margin: 8px 0;
+}
+.steps {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--tx2);
+  font-size: 14px;
+}
+.steps li {
+  margin: 0 0 12px;
+}
+.hl {
+  display: grid;
+  gap: 6px;
+}
+.hl:not(:empty) {
+  margin-top: 12px;
+}
+.hi {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--s1);
+}
+.hi .u {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 500 13px var(--fm);
+}
+.hi small {
+  display: block;
+  color: var(--tx3);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.foot {
+  margin-top: 56px;
+  color: var(--tx3);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+/* ===== Avisos ===== */
+.toasts {
+  position: fixed;
+  left: 50%;
+  bottom: calc(22px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 60;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  pointer-events: none;
+  width: max-content;
+  max-width: 92vw;
+}
+.toast {
+  background: var(--tx);
+  color: var(--bg);
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  animation: rise 0.3s var(--ease);
+  text-align: center;
+}
+.toast.err {
+  background: var(--err);
+  color: #1a0002;
+}
+
+/* ===== Responsivo ===== */
+
+/* Telas grandes */
+@media (min-width: 1700px) {
+  main {
+    max-width: 1440px;
+  }
+  body {
+    font-size: 16px;
+  }
+}
+/* Abas com nome curto quando o espaço aperta */
+@media (max-width: 1100px) {
+  .tabs .l {
+    display: none;
+  }
+  .tabs .s {
+    display: block;
+  }
+}
+/* Tablets e notebooks pequenos: uma coluna */
+@media (max-width: 980px) {
+  .grid3,
+  .grid2,
+  .vgrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* Celular: navegação embaixo, ao alcance do polegar */
+@media (max-width: 760px) {
+  .top {
+    padding: 10px 14px;
+    padding-top: calc(10px + env(safe-area-inset-top));
+  }
+  .tabs {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    gap: 0;
+    overflow: visible;
+    padding: 6px max(4px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom))
+      max(4px, env(safe-area-inset-left));
+    background: #0e0e11;
+    border-top: 1px solid var(--line);
+  }
+  .tabs button {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 1px;
+    font-size: 10.5px;
+    border-radius: 10px;
+  }
+  .tabs svg {
+    display: block;
+    width: 22px;
+    height: 22px;
+  }
+  .tabs .l {
+    display: none;
+  }
+  .tabs .s {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  main {
+    padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  }
+  .toasts {
+    bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+  .inrow {
+    flex-wrap: wrap;
+  }
+  #url {
+    flex-basis: 100%;
+    order: -1;
+    padding: 10px 6px;
+  }
+  .chip {
+    height: 44px;
+    min-width: 0;
+    flex: 1;
+  }
+  .btn.lg {
+    height: 44px;
+    padding: 0 18px;
+  }
+  .push {
+    margin-left: 0;
+  }
+  .time-big {
+    font-size: 19px;
+    min-width: 0;
+  }
+  .sec-h {
+    padding-top: 24px;
+  }
+  .vside .form {
+    grid-template-columns: 1fr 1fr;
+  }
+  .hi {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hi .badge {
+    justify-self: start;
+  }
+  .box {
+    padding: 14px;
+  }
+}
+/* Celulares pequenos */
+@media (max-width: 400px) {
+  .ctrls {
+    gap: 10px;
+  }
+  .ctrls .f {
+    flex: 1 1 40%;
+  }
+  .ctrls .f select {
+    flex: 1;
+  }
+  .seg {
+    display: flex;
+    width: 100%;
+  }
+  .vside .form {
+    grid-template-columns: 1fr;
+  }
+  .lede {
+    margin-bottom: 20px;
+  }
+}
+/* Celular deitado e telas baixas */
+@media (max-height: 520px) and (orientation: landscape) {
+  .hero {
+    padding-top: 18px;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.4rem);
+  }
+  #vid {
+    max-height: 70vh;
+  }
+}
+/* Toque: alvos maiores e fonte de 16px nos campos (evita o zoom automático do iPhone) */
+@media (pointer: coarse) {
+  .btn.sm {
+    height: 40px;
+    padding: 0 13px;
+  }
+  input,
+  select,
+  textarea,
+  .inp,
+  .f select,
+  .f input,
+  #url {
+    font-size: 16px;
+  }
+  .inp,
+  .f select,
+  .f input {
+    height: 40px;
+  }
+  .seg span {
+    padding: 9px 13px;
+  }
+  .tl {
+    height: 78px;
+  }
+  .tl .hd {
+    width: 36px;
+    margin-left: -18px;
+  }
+  .tl .hd::after {
+    left: 16px;
+  }
+}
+/* Sem teclado físico: troca dicas de atalho por dicas de toque */
+@media (pointer: coarse), (hover: none), (max-width: 760px) {
+  .kb {
+    display: none !important;
+  }
+  .tch {
+    display: inline;
+  }
+  .inst .ih {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <a class="brand" href="#baixar" data-tab="baixar"><span class="lamp"></span>PUXA</a>
+  <nav class="tabs" role="tablist" aria-label="Seções">
+    <button role="tab" data-tab="baixar">Baixar</button>
+    <button role="tab" data-tab="audio" data-short="Áudio">Editor de áudio</button>
+    <button role="tab" data-tab="video" data-short="Vídeo">Editor de vídeo</button>
+    <button role="tab" data-tab="ytdlp">yt-dlp</button>
+    <button role="tab" data-tab="hist">Histórico</button>
+    <button role="tab" data-tab="config">Config</button>
+  </nav>
+  <button class="inst" id="inst" data-tab="config" title="Status da instância"><i></i><span>verificando…</span></button>
+</header>
+
+<main>
+<!-- ===== Baixar ===== -->
+<section class="panel" id="p-baixar" role="tabpanel">
+  <div class="hero">
+    <div class="deco" aria-hidden="true"></div>
+    <h1>Cola o link<b>.</b><span>Leva o arquivo.</span></h1>
+    <p class="lede">YouTube, Shorts, TikTok, Reels, Stories, X, SoundCloud e mais 20 plataformas. Vídeo, só o áudio ou vídeo mudo, já cortado no trecho que você quiser. Cole vários links de uma vez<span class="kb"> ou aperte <kbd>Ctrl</kbd>+<kbd>V</kbd> em qualquer lugar da página</span>.</p>
+    <div class="deck" id="deck">
+      <div class="inrow">
+        <span class="chip" id="chip"><i></i><span>link</span></span>
+        <textarea id="url" rows="1" placeholder="Cole um ou vários links…" spellcheck="false" autocomplete="off" aria-label="Links para baixar"></textarea>
+        <button class="btn lg ghost" id="pasteBtn">Colar</button>
+        <button class="btn lg p" id="goBtn">Puxar</button>
+      </div>
+      <div class="ctrls">
+        <div class="seg" role="radiogroup" aria-label="Modo">
+          <label><input type="radio" name="mode" value="auto"><span>Vídeo</span></label>
+          <label><input type="radio" name="mode" value="audio"><span>Só áudio</span></label>
+          <label><input type="radio" name="mode" value="mute"><span>Sem som</span></label>
+        </div>
+        <label class="f">Qualidade <select data-s="vq"><option value="max">Máxima</option><option>4320</option><option>2160</option><option>1440</option><option>1080</option><option>720</option><option>480</option><option>360</option><option>240</option><option>144</option></select></label>
+        <label class="f">Áudio <select data-s="af"><option value="mp3">MP3</option><option value="best">Original</option><option value="ogg">OGG</option><option value="wav">WAV</option><option value="opus">OPUS</option></select></label>
+        <label class="f">kbps <select data-s="ab"><option>320</option><option>256</option><option>128</option><option>96</option><option>64</option></select></label>
+        <label class="f">Trecho <input class="mono" id="cutA" placeholder="início" size="6" aria-label="Início do trecho"> – <input class="mono" id="cutB" placeholder="fim" size="6" aria-label="Fim do trecho"></label>
+        <details class="adv"><summary>Avançado</summary>
+          <div class="advgrid">
+            <label class="f">Codec YouTube <select data-s="codec"><option value="h264">H.264 (toca em tudo)</option><option value="av1">AV1 (menor)</option><option value="vp9">VP9</option></select></label>
+            <label class="f">Nome do arquivo <select data-s="fname"><option value="pretty">Bonito</option><option value="classic">Clássico</option><option value="basic">Básico</option><option value="nerdy">Detalhado</option></select></label>
+            <label class="f">Dublagem YouTube <input data-s="dub" class="mono" placeholder="ex. pt-BR" size="7"></label>
+            <label class="tg"><input type="checkbox" data-s="ttFull">TikTok: áudio original</label>
+            <label class="tg"><input type="checkbox" data-s="noMeta">Remover metadados</label>
+            <label class="tg"><input type="checkbox" data-s="proxy">Sempre via túnel (recomendado)</label>
+            <label class="tg"><input type="checkbox" data-s="autoSave">Salvar ao terminar</label>
+            <label class="tg"><input type="checkbox" data-s="autoEdit">Abrir no editor ao terminar</label>
+          </div>
+        </details>
+      </div>
+    </div>
+    <p class="note" id="deckNote" hidden></p>
+  </div>
+  <div class="jobs" id="jobs"></div>
+  <div class="plats" id="plats"><b>funciona com</b></div>
+  <p class="foot">PUXA roda inteiro no seu navegador. Baixe só conteúdo que você tem direito de usar.</p>
+</section>
+
+<!-- ===== Editor de áudio ===== -->
+<section class="panel" id="p-audio" role="tabpanel">
+  <div class="sec-h">
+    <div><h2>Editor de áudio</h2><p>Corte, fade, efeitos de TikTok (slowed, nightcore, 8D) e exportação em MP3 ou WAV. Nada sai do seu computador.</p></div>
+    <div class="row">
+      <label class="btn"><input type="file" id="aeFile" accept="audio/*,video/*" hidden>Abrir arquivo</label>
+      <button class="btn" id="aeMic">Gravar microfone</button>
+    </div>
+  </div>
+  <div class="ae-head"><span id="aeInfo">Nenhum áudio carregado</span><span class="kb">arrastar = selecionar · roda = zoom · <kbd>Shift</kbd>+roda = mover</span><span class="tch">arraste para selecionar · pinça para zoom</span></div>
+  <div class="wave-wrap"><canvas id="wave"></canvas><div class="empty" id="aeEmpty"><div>Solte um áudio ou vídeo aqui<br><small>ou baixe algo e toque em “Editar áudio”</small></div></div></div>
+  <div class="transport">
+    <button class="btn" id="aePlay" aria-label="Tocar"></button>
+    <button class="btn" id="aeStopB" aria-label="Parar"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg></button>
+    <button class="btn" id="aeLoop" aria-pressed="false" title="Loop (L)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a6 6 0 0 1 6-6h9m-3-3 3 3-3 3M20 12a6 6 0 0 1-6 6H5m3 3-3-3 3-3"/></svg>Loop</button>
+    <span class="time-big" id="aeTime">00:00.000</span>
+    <span class="selin">Seleção <input class="inp mono" id="aeA" placeholder="início" aria-label="Início da seleção"> – <input class="inp mono" id="aeB" placeholder="fim" aria-label="Fim da seleção"> <span class="tc muted" id="aeLen"></span></span>
+    <span class="row push"><button class="btn sm" id="zIn" aria-label="Aproximar">+</button><button class="btn sm" id="zOut" aria-label="Afastar">−</button><button class="btn sm" id="zFit">Tudo</button><button class="btn sm" id="zSel">Seleção</button></span>
+  </div>
+  <div class="grid3">
+    <div class="box">
+      <h3>Edição</h3>
+      <div class="row" id="aeOps">
+        <button class="btn sm" data-op="trim" title="Mantém só a seleção">Cortar p/ seleção</button>
+        <button class="btn sm" data-op="del" title="Del">Apagar seleção</button>
+        <button class="btn sm" data-op="silence">Silenciar</button>
+        <button class="btn sm" data-op="copy" title="Ctrl+C">Copiar</button>
+        <button class="btn sm" data-op="paste" title="Ctrl+V">Colar no cursor</button>
+        <button class="btn sm" data-op="fadein">Fade in</button>
+        <button class="btn sm" data-op="fadeout">Fade out</button>
+        <button class="btn sm" data-op="norm">Normalizar</button>
+        <button class="btn sm" data-op="louder">+3 dB</button>
+        <button class="btn sm" data-op="quieter">−3 dB</button>
+        <button class="btn sm" data-op="rev">Inverter</button>
+        <button class="btn sm" data-op="mono">Mono</button>
+        <button class="btn sm" data-op="strip">Aparar silêncio</button>
+        <button class="btn sm ghost" data-op="undo" title="Ctrl+Z">Desfazer</button>
+        <button class="btn sm ghost" data-op="redo" title="Ctrl+Shift+Z">Refazer</button>
+      </div>
+      <p class="small muted">Sem seleção, a ação vale para o arquivo todo (fade: 3 s nas pontas).<span class="kb"> <kbd>Espaço</kbd> toca/pausa · <kbd>Del</kbd> apaga · <kbd>Ctrl</kbd>+<kbd>A</kbd> seleciona tudo · <kbd>L</kbd> loop</span></p>
+    </div>
+    <div class="box">
+      <h3>Efeitos · prévia ao vivo</h3>
+      <div class="presets" id="presets"></div>
+      <div class="sl"><span>Velocidade</span><input type="range" min="0.5" max="2" step="0.01" data-fx="rate"><output></output></div>
+      <div class="sl"><span>Graves</span><input type="range" min="-12" max="18" step="1" data-fx="bass"><output></output></div>
+      <div class="sl"><span>Agudos</span><input type="range" min="-12" max="12" step="1" data-fx="treble"><output></output></div>
+      <div class="sl"><span>Reverb</span><input type="range" min="0" max="100" step="1" data-fx="rev"><output></output></div>
+      <div class="sl"><span>Volume</span><input type="range" min="-12" max="12" step="0.5" data-fx="vol"><output></output></div>
+      <div class="row" style="margin:10px 0 12px"><label class="tg"><input type="checkbox" data-fx="d8">Áudio 8D</label><label class="tg"><input type="checkbox" data-fx="tel">Rádio antigo</label></div>
+      <div class="row"><button class="btn sm" id="fxBake">Aplicar no áudio</button><button class="btn sm ghost" id="fxReset">Zerar</button></div>
+    </div>
+    <div class="box">
+      <h3>Exportar</h3>
+      <div class="vstack">
+        <input class="inp mono" id="aeName" value="audio_editado" aria-label="Nome do arquivo">
+        <div class="row">
+          <div class="seg"><label><input type="radio" name="aefmt" value="mp3" checked><span>MP3</span></label><label><input type="radio" name="aefmt" value="wav"><span>WAV</span></label></div>
+          <label class="f">kbps <select id="aeKbps"><option>320</option><option selected>192</option><option>128</option><option>96</option></select></label>
+        </div>
+        <div class="seg"><label><input type="radio" name="aerng" value="all" checked><span>Arquivo todo</span></label><label><input type="radio" name="aerng" value="sel"><span>Só a seleção</span></label></div>
+        <div class="row"><button class="btn p" id="aeExp">Exportar</button><button class="btn" id="aeRing" title="Seleciona 30 s a partir do cursor">Toque 30 s</button><button class="btn shareLast" hidden>Compartilhar</button></div>
+      </div>
+      <div class="prog"><i id="aeProg"></i></div>
+      <p class="small muted">Efeitos ativos entram no arquivo exportado.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Editor de vídeo ===== -->
+<section class="panel" id="p-video" role="tabpanel">
+  <div class="sec-h">
+    <div><h2>Editor de vídeo</h2><p>Corte trechos, transforme vídeo deitado em vertical para Reels e TikTok, crie GIF, extraia o áudio ou salve um frame.</p></div>
+    <div class="row"><label class="btn"><input type="file" id="veFile" accept="video/*" hidden>Abrir vídeo</label></div>
+  </div>
+  <div class="vgrid">
+    <div>
+      <div class="ae-head"><span id="veInfo">Nenhum vídeo carregado</span><span class="kb"><kbd>I</kbd> início · <kbd>O</kbd> fim · <kbd>←</kbd><kbd>→</kbd> quadro a quadro</span></div>
+      <div class="player"><video id="vid" playsinline controls preload="metadata"></video><div class="empty" id="veEmpty"><div>Solte um vídeo aqui<br><small>ou baixe algo e toque em “Editar vídeo”</small></div></div></div>
+      <div class="tl" id="tl"><canvas id="strip"></canvas><div class="rng" id="rng"></div><div class="hd" id="hA"></div><div class="hd" id="hB"></div><div class="ph" id="ph"></div></div>
+      <div class="transport">
+        <button class="btn sm" id="veMarkA">Início aqui</button>
+        <span class="selin"><input class="inp mono" id="veA" aria-label="Início do corte"> – <input class="inp mono" id="veB" aria-label="Fim do corte"> <span class="tc muted" id="veLen"></span></span>
+        <button class="btn sm" id="veMarkB">Fim aqui</button>
+        <button class="btn sm push" id="vePrev">Prévia do corte</button>
+      </div>
+    </div>
+    <aside class="box vside">
+      <h3>Exportar corte</h3>
+      <div class="form">
+        <label class="full">Enquadramento<select class="inp" id="veFit"><option value="orig">Original</option><option value="vcrop">Vertical 9:16 (corta as laterais)</option><option value="vblur">Vertical 9:16 (fundo desfocado)</option><option value="sq">Quadrado 1:1</option></select></label>
+        <label>Formato<select class="inp" id="veFmt"></select></label>
+        <label>Resolução<select class="inp" id="veRes"><option value="orig">Original</option><option value="1080">1080p</option><option value="720" selected>720p</option><option value="480">480p</option><option value="360">360p</option></select></label>
+        <label>FPS<select class="inp" id="veFps"><option>24</option><option selected>30</option><option>60</option></select></label>
+        <label>Velocidade<select class="inp" id="veSpd"><option value="0.5">0,5×</option><option value="0.75">0,75×</option><option value="1" selected>1×</option><option value="1.25">1,25×</option><option value="1.5">1,5×</option><option value="2">2×</option></select></label>
+      </div>
+      <div class="row" style="margin:12px 0"><label class="tg"><input type="checkbox" id="veMute">Sem áudio</label></div>
+      <button class="btn p" id="veExport" style="width:100%">Exportar corte</button>
+      <h3>GIF</h3>
+      <div class="row"><label class="f">Largura <select id="gifW"><option>240</option><option selected>360</option><option>480</option></select></label><label class="f">FPS <select id="gifFps"><option>8</option><option selected>12</option><option>15</option></select></label><button class="btn" id="veGif">Criar GIF</button></div>
+      <h3>Extras</h3>
+      <div class="row"><button class="btn" id="veAudio">Áudio → editor</button><button class="btn" id="veFrame">Salvar frame</button></div>
+      <div class="prog"><i id="veProg"></i></div>
+      <p class="small muted" id="veMsg">A exportação roda em tempo real. Mantenha esta aba visível.</p>
+      <div class="row"><button class="btn sm" id="veCancel" hidden>Cancelar</button><button class="btn sm" id="veLast" hidden>Abrir resultado no editor</button><button class="btn sm shareLast" hidden>Compartilhar</button></div>
+    </aside>
+  </div>
+</section>
+
+<!-- ===== Gerador yt-dlp ===== -->
+<section class="panel" id="p-ytdlp" role="tabpanel">
+  <div class="sec-h"><div><h2>Gerador yt-dlp</h2><p>Para playlists, canais inteiros, legendas, lives gravadas e mais de mil sites. Monte o comando, copie e cole no terminal.</p></div></div>
+  <div class="box">
+    <div class="form">
+      <label style="grid-column:1/-1">Link(s)<input class="inp mono" id="ytUrl" placeholder="https://… (separe vários com espaço)"></label>
+      <label>Formato<select class="inp" id="ytType"><option value="mp4">Vídeo MP4 (melhor)</option><option value="best">Vídeo qualquer formato (máxima)</option><option value="1080">Vídeo até 1080p</option><option value="720">Vídeo até 720p</option><option value="mp3">Só áudio MP3</option><option value="m4a">Só áudio M4A</option><option value="wav">Só áudio WAV</option><option value="opus">Só áudio OPUS</option><option value="vonly">Só vídeo (sem som)</option></select></label>
+      <label>Início do trecho<input class="inp mono" id="ytA" placeholder="ex. 1:10"></label>
+      <label>Fim do trecho<input class="inp mono" id="ytB" placeholder="ex. 1:40"></label>
+      <label>Playlist<select class="inp" id="ytPl"><option value="no">Só este vídeo</option><option value="yes">Playlist inteira</option></select></label>
+      <label>Cookies do navegador<select class="inp" id="ytCk"><option value="">Nenhum</option><option>chrome</option><option>edge</option><option>firefox</option><option>brave</option><option>opera</option><option>safari</option></select></label>
+      <label>Nome do arquivo<select class="inp" id="ytOut"><option value="%(title)s.%(ext)s">Título</option><option value="%(title)s [%(id)s].%(ext)s">Título [id]</option><option value="%(uploader)s/%(title)s.%(ext)s">Pasta do canal / título</option><option value="%(playlist_title)s/%(playlist_index)03d - %(title)s.%(ext)s">Playlist numerada</option></select></label>
+    </div>
+    <div class="row" style="margin-top:14px;gap:10px 18px">
+      <label class="tg"><input type="checkbox" id="ytSubs">Legendas PT/EN</label>
+      <label class="tg"><input type="checkbox" id="ytThumb" checked>Capa embutida</label>
+      <label class="tg"><input type="checkbox" id="ytMeta" checked>Metadados</label>
+      <label class="tg"><input type="checkbox" id="ytSB">Pular patrocínios (SponsorBlock)</label>
+    </div>
+  </div>
+  <pre class="cmd" id="ytCmd"></pre>
+  <div class="row"><button class="btn p" id="ytCopy">Copiar comando</button><span class="small muted">Cookies do navegador liberam Stories, conteúdo +18 e privados da sua conta.</span></div>
+  <div class="box" style="margin-top:22px">
+    <h3>Instalar uma vez (yt-dlp + ffmpeg)</h3>
+    <div class="vstack" id="ytInstall"></div>
+  </div>
+</section>
+
+<!-- ===== Histórico ===== -->
+<section class="panel" id="p-hist" role="tabpanel">
+  <div class="sec-h"><div><h2>Histórico</h2><p>Fica salvo só neste navegador.</p></div><div class="row"><button class="btn" id="hExp">Exportar .json</button><button class="btn" id="hClr">Limpar</button></div></div>
+  <div class="hl" id="histList"></div>
+</section>
+
+<!-- ===== Config ===== -->
+<section class="panel" id="p-config" role="tabpanel">
+  <div class="sec-h"><div><h2>Config</h2><p>O PUXA conversa com a API do <a href="https://github.com/imputnet/cobalt" target="_blank" rel="noopener">cobalt</a>, que é código aberto. Com a sua própria instância, os downloads saem direto daqui, sem anúncio e sem fila.</p></div></div>
+  <div class="grid2">
+    <div class="box">
+      <h3>Instâncias (uma por linha, em ordem de prioridade)</h3>
+      <textarea class="inp mono" id="instList" rows="4" spellcheck="false"></textarea>
+      <div class="row" style="margin-top:12px">
+        <label class="f">Chave <input type="password" data-s="apiKey" class="mono" placeholder="opcional" size="14" autocomplete="off"></label>
+        <label class="f">Tipo <select data-s="authType"><option>Api-Key</option><option>Bearer</option></select></label>
+        <label class="f">Simultâneos <select data-s="conc"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+      </div>
+      <div class="row" style="margin-top:12px"><button class="btn p" id="testInst">Testar instâncias</button><button class="btn ghost" id="resetCfg">Restaurar padrão</button></div>
+      <div class="hl" id="instRes"></div>
+    </div>
+    <div class="box">
+      <h3>Sua instância em 2 minutos</h3>
+      <ol class="steps">
+        <li>Instale o Docker Desktop (Windows, Mac ou Linux).</li>
+        <li>Rode no terminal:<pre class="cmd sm" id="dock">docker run -d --name cobalt --restart unless-stopped -p 9000:9000 -e API_URL=http://localhost:9000/ ghcr.io/imputnet/cobalt:latest</pre><button class="btn sm" data-copy="#dock">Copiar</button></li>
+        <li>Deixe <code>http://localhost:9000</code> na lista e clique em Testar. Pronto.</li>
+      </ol>
+      <p class="small muted">No site publicado (HTTPS), o navegador só aceita <code>http://localhost</code> ou instâncias com <code>https://</code>. Para usar no celular, exponha a instância com HTTPS (ex. Cloudflare Tunnel) e use esse endereço nos dois lugares. Se o navegador perguntar sobre acesso à rede local, permita. Se o YouTube pedir login, configure cookies na instância (veja a doc do cobalt). Sem instância? Quando um download falha aparecem atalhos para o cobalt.tools e para a aba yt-dlp.</p>
+    </div>
+  </div>
+</section>
+</main>
+</div>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<script>
+/*
+ * PUXA — baixa vídeo e áudio, corta, converte e edita, tudo no navegador.
+ *
+ * O download passa por uma instância do cobalt (https://github.com/imputnet/cobalt).
+ * Edição de áudio, cortes de vídeo, GIF e conversão para MP3 rodam aqui mesmo,
+ * com Web Audio, Canvas e MediaRecorder. Nenhum arquivo sai do computador.
+ */
+'use strict';
+
+// ===== Utilidades =====
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const escaparHtml = s =>
+  String(s ?? '').replace(
+    /[&<>"']/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
+  );
+const limitar = (v, a, b) => (v < a ? a : v > b ? b : v);
+const esperar = ms => new Promise(r => setTimeout(r, ms));
+// localStorage pode falhar (aba anônima, cota cheia), então tudo passa por try/catch.
+const armazenamento = {
+  get(k, d) {
+    try {
+      const v = localStorage.getItem('puxa:' + k);
+      return v == null ? d : JSON.parse(v);
+    } catch {
+      return d;
+    }
+  },
+  set(k, v) {
+    try {
+      localStorage.setItem('puxa:' + k, JSON.stringify(v));
+    } catch {}
+  },
+};
+
+// Configuração padrão. As chaves batem com os atributos data-s do HTML
+// e com os campos da API do cobalt (vq = qualidade, af = formato de áudio, ab = kbps...).
+const PADRAO = {
+  instances: ['http://localhost:9000'],
+  apiKey: '',
+  authType: 'Api-Key',
+  mode: 'auto',
+  vq: '1080',
+  af: 'mp3',
+  ab: '320',
+  codec: 'h264',
+  fname: 'pretty',
+  dub: '',
+  ttFull: false,
+  noMeta: false,
+  proxy: true,
+  autoSave: true,
+  autoEdit: false,
+  conc: '2',
+};
+const config = Object.assign({}, PADRAO, armazenamento.get('s', {}));
+const salvarConfig = () => armazenamento.set('s', config);
+const formatarBytes = n =>
+  n < 1024
+    ? n + ' B'
+    : n < 1048576
+      ? (n / 1024).toFixed(0) + ' KB'
+      : n < 1073741824
+        ? (n / 1048576).toFixed(1) + ' MB'
+        : (n / 1073741824).toFixed(2) + ' GB';
+function formatarTempo(s, d = 3) {
+  s = Math.max(0, +s || 0);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const x = s % 60;
+  const sec = d ? x.toFixed(d).padStart(3 + d, '0') : String(Math.floor(x)).padStart(2, '0');
+  return (h ? h + ':' + String(m).padStart(2, '0') : String(m).padStart(2, '0')) + ':' + sec;
+}
+function lerTempo(v) {
+  v = String(v || '')
+    .trim()
+    .replace(',', '.');
+  if (!v) return null;
+  const p = v.split(':').map(Number);
+  if (p.some(x => isNaN(x))) return null;
+  return p.reduce((a, b) => a * 60 + b, 0);
+}
+const dominio = u => {
+  try {
+    return new URL(u).host;
+  } catch {
+    return u;
+  }
+};
+const semExtensao = n => String(n || 'arquivo').replace(/\.[^.\/]+$/, '');
+function aviso(m, k = '') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + k;
+  t.textContent = m;
+  $('#toasts').append(t);
+  setTimeout(
+    () => {
+      t.style.transition = 'opacity .3s';
+      t.style.opacity = 0;
+      setTimeout(() => t.remove(), 320);
+    },
+    k === 'err' ? 5200 : 2600
+  );
+}
+
+// Dispara o download de um Blob ou de uma URL. O object URL é liberado depois de 1 minuto.
+function baixarArquivo(origem, nome) {
+  const isB = origem instanceof Blob;
+  const u = isB ? URL.createObjectURL(origem) : origem;
+  const a = document.createElement('a');
+  a.href = u;
+  a.download = nome || '';
+  a.rel = 'noopener';
+  if (!isB && !u.startsWith('blob:')) a.target = '_blank';
+  document.body.append(a);
+  a.click();
+  a.remove();
+  if (isB) setTimeout(() => URL.revokeObjectURL(u), 60000);
+}
+
+// Web Share API: no celular abre a folha de compartilhar (WhatsApp, Galeria, Arquivos...).
+const podeCompartilhar = b => {
+  try {
+    return !!(
+      navigator.canShare && navigator.canShare({ files: [new File([b], 'x', { type: b.type })] })
+    );
+  } catch {
+    return false;
+  }
+};
+async function compartilhar(b, nome) {
+  try {
+    await navigator.share({
+      files: [new File([b], nome, { type: b.type || 'application/octet-stream' })],
+      title: nome,
+    });
+  } catch (e) {
+    if (e.name !== 'AbortError') aviso('Não deu para compartilhar', 'err');
+  }
+}
+let ultimoArquivo = null;
+function entregar(b, nome) {
+  baixarArquivo(b, nome);
+  ultimoArquivo = { arquivo: b, nome };
+  const ok = podeCompartilhar(b);
+  $$('.shareLast').forEach(x => (x.hidden = !ok));
+}
+document.addEventListener('click', e => {
+  if (e.target.closest('.shareLast') && ultimoArquivo)
+    compartilhar(ultimoArquivo.arquivo, ultimoArquivo.nome);
+});
+async function copiar(t, mensagem = 'Copiado') {
+  try {
+    await navigator.clipboard.writeText(t);
+  } catch {
+    const x = document.createElement('textarea');
+    x.value = t;
+    document.body.append(x);
+    x.select();
+    document.execCommand('copy');
+    x.remove();
+  }
+  aviso(mensagem);
+}
+const aguardarEvento = (el, ev) =>
+  new Promise((res, rej) => {
+    const ok = () => {
+      off();
+      res();
+    };
+    const bad = () => {
+      off();
+      rej(new Error('Falha ao carregar a mídia'));
+    };
+    const off = () => {
+      el.removeEventListener(ev, ok);
+      el.removeEventListener('error', bad);
+    };
+    el.addEventListener(ev, ok);
+    el.addEventListener('error', bad);
+  });
+function criarBotao(p, rotulo, acao, classe = '') {
+  const b = document.createElement('button');
+  b.className = 'btn sm ' + classe;
+  b.textContent = rotulo;
+  b.onclick = () => acao(b);
+  p.append(b);
+  return b;
+}
+function tipoDeMidia(b, n = '') {
+  const t = ((b && b.type) || '') + ' ' + String(n).toLowerCase();
+  if (/video|\.(mp4|webm|mov|mkv|m4v)\b/.test(t)) return 'vídeo';
+  if (/audio|\.(mp3|ogg|wav|opus|m4a|flac|aac)\b/.test(t)) return 'áudio';
+  if (/image|\.(jpe?g|png|webp|gif|avif|heic)\b/.test(t)) return 'imagem';
+  return 'arquivo';
+}
+const extensaoPorMime = (t, d) =>
+  ({
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/gif': 'gif',
+    'video/mp4': 'mp4',
+    'video/webm': 'webm',
+    'audio/mpeg': 'mp3',
+    'audio/mp4': 'm4a',
+    'audio/ogg': 'ogg',
+    'audio/opus': 'opus',
+    'audio/wav': 'wav',
+  })[String(t).split(';')[0]] || d;
+
+// ===== Abas =====
+// Ícones da barra de navegação inferior (só aparecem no celular).
+const ICONES_ABAS = {
+  baixar: '<path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/>',
+  audio: '<path d="M4 10v4M8 6v12M12 9v6M16 4v16M20 10v4"/>',
+  video: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m10 9 5 3-5 3z"/>',
+  ytdlp: '<path d="m5 8 4 4-4 4M12 17h7"/>',
+  hist: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  config:
+    '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',
+};
+$$('.tabs button').forEach(b => {
+  const t = b.textContent;
+  b.setAttribute('aria-label', t);
+  b.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONES_ABAS[b.dataset.tab]}</svg><span class="l">${t}</span><span class="s">${b.dataset.short || t}</span>`;
+});
+let abaAtual = 'baixar';
+function abrirAba(aba) {
+  if (!$('#p-' + aba)) aba = 'baixar';
+  abaAtual = aba;
+  $$('.panel').forEach(p => p.classList.toggle('on', p.id === 'p-' + aba));
+  $$('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === aba));
+  if (location.hash !== '#' + aba) history.replaceState(null, '', '#' + aba);
+  if (aba === 'audio') requestAnimationFrame(desenharOnda);
+  if (aba === 'ytdlp') montarComandoYtdlp();
+  if (aba === 'hist') renderizarHistorico();
+  if (aba === 'config') $('#instList').value = config.instances.join('\n');
+  if (aba === 'video' && editorVideo.duracao) requestAnimationFrame(atualizarLinhaDoTempo);
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-tab]');
+  if (t) {
+    e.preventDefault();
+    abrirAba(t.dataset.tab);
+    scrollTo({ top: 0 });
+  }
+  const c = e.target.closest('[data-copy]');
+  if (c) copiar($(c.dataset.copy).textContent);
+});
+
+// Liga cada campo com data-s à configuração salva.
+$$('[data-s]').forEach(el => {
+  const k = el.dataset.s;
+  if (el.type === 'checkbox') el.checked = !!config[k];
+  else el.value = config[k];
+  el.addEventListener('change', () => {
+    config[k] = el.type === 'checkbox' ? el.checked : el.value.trim();
+    salvarConfig();
+    if (k === 'apiKey') atualizarStatusInstancia();
+  });
+});
+$$('input[name=mode]').forEach(r => {
+  r.checked = r.value === config.mode;
+  r.onchange = () => {
+    config.mode = r.value;
+    salvarConfig();
+  };
+});
+
+// ===== Plataformas e links =====
+// [id, nome, regex do domínio, cor do selo]
+const PLATAFORMAS = [
+  ['yt', 'YouTube', /youtu\.?be|youtube\.com|youtube-nocookie/i, '#FF3B30'],
+  ['tt', 'TikTok', /tiktok\.com/i, '#25F4EE'],
+  ['ig', 'Instagram', /instagram\.com|instagr\.am|ddinstagram/i, '#E1306C'],
+  ['x', 'X / Twitter', /(^|[\/.])(twitter|x)\.com|fxtwitter|vxtwitter|fixupx/i, '#E7E9EA'],
+  ['fb', 'Facebook', /facebook\.com|fb\.watch|fb\.com/i, '#1877F2'],
+  ['rd', 'Reddit', /reddit\.com|redd\.it/i, '#FF4500'],
+  ['sc', 'SoundCloud', /soundcloud\.com/i, '#FF7700'],
+  ['tw', 'Twitch', /twitch\.tv/i, '#9146FF'],
+  ['vm', 'Vimeo', /vimeo\.com/i, '#1AB7EA'],
+  ['pin', 'Pinterest', /pinterest\.|pin\.it/i, '#E60023'],
+  ['bs', 'Bluesky', /bsky\.app/i, '#1185FE'],
+  ['snap', 'Snapchat', /snapchat\.com/i, '#FFFC00'],
+  ['tb', 'Tumblr', /tumblr\.com/i, '#7C8AA5'],
+  ['dm', 'Dailymotion', /dailymotion\.com|dai\.ly/i, '#0A84FF'],
+  ['bili', 'Bilibili', /bilibili\.|b23\.tv/i, '#00A1D6'],
+  ['vk', 'VK', /vk\.com|vkvideo\.ru|vk\.ru/i, '#0077FF'],
+  ['ok', 'OK.ru', /ok\.ru/i, '#EE8208'],
+  ['rt', 'Rutube', /rutube\.ru/i, '#00A2FF'],
+  ['loom', 'Loom', /loom\.com/i, '#625DF5'],
+  ['str', 'Streamable', /streamable\.com/i, '#0F90FA'],
+  ['xhs', 'Xiaohongshu', /xiaohongshu\.com|xhslink\.com/i, '#FF2442'],
+  ['ng', 'Newgrounds', /newgrounds\.com/i, '#F7A01B'],
+];
+function detectarPlataforma(u) {
+  for (const p of PLATAFORMAS)
+    if (p[2].test(u)) {
+      let sub = '';
+      if (p[0] === 'yt')
+        sub = /shorts\//.test(u)
+          ? 'Shorts'
+          : /music\.youtube/.test(u)
+            ? 'Music'
+            : /[?&]list=/.test(u) && !/[?&]v=|youtu\.be\//.test(u)
+              ? 'Playlist'
+              : /\/live\//.test(u)
+                ? 'Live'
+                : '';
+      if (p[0] === 'ig')
+        sub = /\/reels?\//.test(u)
+          ? 'Reel'
+          : /\/stories\//.test(u)
+            ? 'Story'
+            : /\/(p|tv)\//.test(u)
+              ? 'Post'
+              : '';
+      if (p[0] === 'tt') sub = /\/photo\//.test(u) ? 'Fotos' : '';
+      if (p[0] === 'tw') sub = /clip/.test(u) ? 'Clipe' : '';
+      return { id: p[0], name: p[1], sub, color: p[3] };
+    }
+  return null;
+}
+const idDoYoutube = u => {
+  const m = String(u).match(/(?:[?&]v=|youtu\.be\/|shorts\/|embed\/|live\/)([\w-]{11})/);
+  return m ? m[1] : null;
+};
+
+// Parâmetros de rastreio que tiramos do link antes de mandar para a instância.
+const PARAMETROS_RASTREIO = [
+  'si',
+  'feature',
+  'igsh',
+  'igshid',
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_content',
+  'utm_term',
+  'fbclid',
+  'is_from_webapp',
+  'sender_device',
+  'sender_web_id',
+  '_r',
+  '_t',
+  'pp',
+  'ref',
+  'share_id',
+];
+function limparLink(u) {
+  try {
+    const x = new URL(u.replace(/[),.;!]+$/, ''));
+    PARAMETROS_RASTREIO.forEach(k => x.searchParams.delete(k));
+    return x.toString();
+  } catch {
+    return u;
+  }
+}
+
+// Pega todos os links de um texto colado. Aceita link sem "https://" também.
+function extrairLinks(t) {
+  t = String(t || '');
+  const m = t.match(/https?:\/\/[^\s<>"'`]+/gi);
+  if (m) return [...new Set(m.map(limparLink))];
+  return [
+    ...new Set(
+      t
+        .split(/\s+/)
+        .filter(x => /^[\w-]+(\.[\w-]+)+\/\S+/.test(x))
+        .map(x => limparLink('https://' + x))
+    ),
+  ];
+}
+$('#plats').insertAdjacentHTML(
+  'beforeend',
+  PLATAFORMAS.map(p => `<span style="--c:${p[3]}">${escaparHtml(p[1])}</span>`).join('')
+);
+const seloPlataforma = p =>
+  p
+    ? `<span class="badge" style="--c:${p.color}">${escaparHtml(p.name)}${p.sub ? ` <em>${escaparHtml(p.sub)}</em>` : ''}</span>`
+    : '<span class="badge">link</span>';
+
+// ===== Campo de link =====
+const campoLink = $('#url');
+function aoDigitarLink() {
+  campoLink.style.height = 'auto';
+  campoLink.style.height = Math.min(180, campoLink.scrollHeight) + 'px';
+  const us = extrairLinks(campoLink.value);
+  const chip = $('#chip');
+  if (us.length > 1) {
+    chip.style.setProperty('--c', 'var(--amb)');
+    chip.lastChild.textContent = us.length + ' links';
+    $('#goBtn').textContent = `Puxar ${us.length}`;
+  } else {
+    const p = us[0] && detectarPlataforma(us[0]);
+    chip.style.setProperty('--c', p ? p.color : 'var(--tx3)');
+    chip.lastChild.textContent = p ? p.sub || p.name : us[0] ? 'link' : 'link';
+    $('#goBtn').textContent = 'Puxar';
+  }
+}
+campoLink.addEventListener('input', aoDigitarLink);
+campoLink.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    iniciarDownloads();
+  }
+});
+$('#goBtn').onclick = iniciarDownloads;
+$('#pasteBtn').onclick = async () => {
+  try {
+    const t = await navigator.clipboard.readText();
+    campoLink.value = t;
+    aoDigitarLink();
+    if (extrairLinks(t).length) iniciarDownloads();
+  } catch {
+    campoLink.focus();
+    aviso('Cole o link no campo');
+  }
+};
+function iniciarDownloads() {
+  const us = extrairLinks(campoLink.value);
+  if (!us.length) {
+    aviso('Cole um link válido', 'err');
+    campoLink.focus();
+    return;
+  }
+  let at = null;
+  for (const u of us) {
+    const p = detectarPlataforma(u);
+    if (p && p.sub === 'Playlist') {
+      $('#ytUrl').value = u;
+      $('#ytPl').value = 'yes';
+      aviso('Playlist: use o yt-dlp para baixar tudo de uma vez');
+      abrirAba('ytdlp');
+      continue;
+    }
+    at = adicionarNaFila(u, config.mode, at).cartao;
+  }
+  campoLink.value = '';
+  aoDigitarLink();
+}
+
+// ===== API do cobalt =====
+// Códigos de erro traduzidos. A busca é por trecho do código,
+// então "auth" cobre todos os erros de autenticação.
+const MENSAGENS_ERRO = {
+  auth: 'Esta instância exige autenticação (chave ou Turnstile). Configure a sua em Config.',
+  rate_exceeded: 'Limite de pedidos da instância. Aguarde um pouco.',
+  'link.invalid': 'Link inválido.',
+  'link.unsupported': 'Link não suportado.',
+  'service.unsupported': 'Plataforma não suportada.',
+  'service.disabled': 'Plataforma desativada nesta instância.',
+  'video.live': 'Live em andamento não pode ser baixada.',
+  'video.private': 'Vídeo privado.',
+  'video.age': 'Conteúdo com restrição de idade.',
+  'video.region': 'Bloqueado na região da instância.',
+  'video.unavailable': 'Vídeo indisponível (removido, privado ou bloqueado).',
+  too_long: 'Mais longo que o limite da instância.',
+  'post.unavailable': 'Post indisponível.',
+  'post.private': 'Post privado.',
+  'post.age': 'Post com restrição de idade.',
+  'fetch.empty': 'Nada para baixar nesse link.',
+  'fetch.rate': 'A plataforma limitou a instância. Tente depois.',
+  'fetch.short_link': 'Não deu para abrir o link curto.',
+  'fetch.critical': 'Erro crítico na instância.',
+  'fetch.fail': 'A instância não conseguiu buscar o conteúdo.',
+  'youtube.login': 'O YouTube pediu login para a instância (precisa de cookies).',
+  'youtube.decipher': 'O YouTube mudou algo. Atualize a instância.',
+  'youtube.token_expired': 'Token do YouTube expirou na instância.',
+  'youtube.no_matching_format': 'Nenhum formato compatível. Troque codec ou qualidade.',
+  invalid_body: 'A instância recusou as opções enviadas.',
+  capacity: 'Instância sobrecarregada.',
+  'http.': 'A instância respondeu com erro HTTP.',
+};
+const traduzirErro = c => {
+  c = String(c || '');
+  for (const k in MENSAGENS_ERRO) if (c.includes(k)) return MENSAGENS_ERRO[k];
+  return c ? 'Erro: ' + c : 'Erro desconhecido';
+};
+
+// Corpo do POST. Se a instância recusar as opções (versão antiga), tentamos de novo só com o básico.
+function montarPedido(url, modo, min) {
+  const b = { url, downloadMode: modo, videoQuality: config.vq, audioFormat: config.af };
+  if (min) return b;
+  Object.assign(b, {
+    audioBitrate: config.ab,
+    filenameStyle: config.fname,
+    youtubeVideoCodec: config.codec,
+    alwaysProxy: !!config.proxy,
+    disableMetadata: !!config.noMeta,
+    tiktokFullAudio: !!config.ttFull,
+  });
+  if (config.dub) b.youtubeDubLang = config.dub;
+  return b;
+}
+async function pedirAoCobalt(instancia, corpo) {
+  const controle = new AbortController();
+  const t = setTimeout(() => controle.abort(), 30000);
+  const h = { Accept: 'application/json', 'Content-Type': 'application/json' };
+  if (config.apiKey)
+    h.Authorization = (config.authType === 'Bearer' ? 'Bearer ' : 'Api-Key ') + config.apiKey;
+  try {
+    const r = await fetch(instancia.replace(/\/+$/, '') + '/', {
+      method: 'POST',
+      headers: h,
+      body: JSON.stringify(corpo),
+      signal: controle.signal,
+    });
+    return await r.json().catch(() => ({ status: 'error', error: { code: 'http.' + r.status } }));
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+// Tenta as instâncias em ordem. Erro do conteúdo (vídeo privado, link inválido) para na hora;
+// erro da instância (offline, sem permissão, limite) passa para a próxima.
+async function consultarInstancias(url, modo) {
+  const lista = config.instances.filter(Boolean);
+  if (!lista.length) throw new Error('Nenhuma instância configurada. Abra Config.');
+  let last = '';
+  for (const instancia of lista) {
+    if (bloqueadaPorHttps(instancia)) {
+      last = `${dominio(instancia)}: bloqueada (site em HTTPS não acessa http:// na rede)`;
+      continue;
+    }
+    let r;
+    try {
+      r = await pedirAoCobalt(instancia, montarPedido(url, modo));
+      if (r.status === 'error' && /invalid_body/.test(r.error?.code))
+        r = await pedirAoCobalt(instancia, montarPedido(url, modo, 1));
+    } catch (e) {
+      last = `${dominio(instancia)}: sem resposta (${e.name === 'AbortError' ? 'tempo esgotado' : 'offline ou bloqueada'})`;
+      continue;
+    }
+    if (r.status !== 'error') return { r, base: instancia };
+    const codigo = r.error?.code || '';
+    last = `${dominio(instancia)}: ${traduzirErro(codigo)}`;
+    if (
+      /content\.(video|post)\.(unavailable|private|age|live)|link\.invalid|fetch\.empty/.test(
+        codigo
+      )
+    )
+      throw new Error(traduzirErro(codigo));
+  }
+  throw new Error(last);
+}
+
+// Em página HTTPS o navegador bloqueia instância http:// (conteúdo misto), exceto localhost.
+const bloqueadaPorHttps = u =>
+  location.protocol === 'https:' &&
+  /^http:/i.test(u) &&
+  !/^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(u);
+async function testarInstancia(instancia, ms = 5000) {
+  const controle = new AbortController();
+  const t = setTimeout(() => controle.abort(), ms);
+  const t0 = performance.now();
+  try {
+    const r = await fetch(instancia.replace(/\/+$/, '') + '/', {
+      signal: controle.signal,
+      headers: { Accept: 'application/json' },
+    });
+    const d = await r.json();
+    return d.cobalt
+      ? {
+          ok: 1,
+          v: d.cobalt.version,
+          sv: d.cobalt.services || [],
+          ms: Math.round(performance.now() - t0),
+        }
+      : { ok: 0, err: 'não parece cobalt' };
+  } catch (e) {
+    return { ok: 0, err: e.name === 'AbortError' ? 'sem resposta' : 'offline ou bloqueada' };
+  } finally {
+    clearTimeout(t);
+  }
+}
+async function atualizarStatusInstancia() {
+  const b = $('#inst');
+  const n = $('#deckNote');
+  const f = config.instances[0];
+  if (!f) {
+    b.className = 'inst bad';
+    b.lastChild.textContent = 'sem instância';
+    n.hidden = false;
+    n.innerHTML =
+      'Nenhuma instância configurada. <a data-tab="config">Configurar em 2 minutos →</a>';
+    return;
+  }
+  if (bloqueadaPorHttps(f)) {
+    b.className = 'inst bad';
+    b.lastChild.textContent = 'bloqueada';
+    n.hidden = false;
+    n.innerHTML = `Este site está em HTTPS e o navegador bloqueia <code>${escaparHtml(f)}</code>. Use <code>http://localhost:9000</code> no PC, uma instância com <code>https://</code> ou o arquivo baixado. <a data-tab="config">Ver Config →</a>`;
+    return;
+  }
+  const r = await testarInstancia(f, 4500);
+  b.className = 'inst ' + (r.ok ? 'ok' : 'bad');
+  b.lastChild.innerHTML = `<span class="ih">${escaparHtml(dominio(f))} · </span>${r.ok ? 'v' + escaparHtml(r.v) : 'offline'}`;
+  b.title = dominio(f);
+  n.hidden = !!r.ok;
+  if (!r.ok)
+    n.innerHTML = `A instância <code>${escaparHtml(dominio(f))}</code> não respondeu. <a data-tab="config">Suba a sua em 2 minutos →</a> ou use o editor e o yt-dlp, que funcionam sem ela.`;
+}
+
+// fetch lendo o corpo aos pedaços, para mostrar progresso e velocidade.
+async function baixarComProgresso(url, sinal, aoProgredir) {
+  const r = await fetch(url, { signal: sinal });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const total = +(
+    r.headers.get('content-length') ||
+    r.headers.get('estimated-content-length') ||
+    0
+  );
+  const type = r.headers.get('content-type') || '';
+  if (!r.body) return r.blob();
+  const rd = r.body.getReader();
+  const partes = [];
+  let recebido = 0;
+  let t0 = performance.now();
+  let last = 0;
+  for (;;) {
+    const { done, value } = await rd.read();
+    if (done) break;
+    partes.push(value);
+    recebido += value.length;
+    const now = performance.now();
+    if (aoProgredir && now - last > 140) {
+      last = now;
+      aoProgredir(recebido, total, recebido / Math.max(1e-3, (now - t0) / 1000));
+    }
+  }
+  return new Blob(partes, { type });
+}
+
+// ===== Fila de downloads =====
+// Cada link vira uma tarefa com um cartão na tela. Rodam no máximo config.conc ao mesmo tempo.
+const tarefas = new Map();
+const fila = [];
+let emAndamento = 0;
+const atualizarIndicador = () => document.body.classList.toggle('busy', emAndamento > 0);
+function adicionarNaFila(url, modo = config.mode, depois = null) {
+  const tarefa = {
+    id: Math.random().toString(36).slice(2, 9),
+    url,
+    plataforma: detectarPlataforma(url),
+    modo,
+    trecho: [lerTempo($('#cutA').value), lerTempo($('#cutB').value)],
+    controle: new AbortController(),
+  };
+  tarefas.set(tarefa.id, tarefa);
+  criarCartao(tarefa, depois);
+  fila.push(tarefa);
+  processarFila();
+  return tarefa;
+}
+function processarFila() {
+  while (emAndamento < +config.conc && fila.length) {
+    const tarefa = fila.shift();
+    if (tarefa.cancelada) continue;
+    emAndamento++;
+    atualizarIndicador();
+    executarTarefa(tarefa)
+      .catch(e => {
+        if (tarefa.cancelada) return;
+        atualizarCartao(tarefa, 'erro', e.name === 'AbortError' ? 'Cancelado' : e.message);
+        mostrarFalha(tarefa);
+      })
+      .finally(() => {
+        emAndamento--;
+        atualizarIndicador();
+        processarFila();
+      });
+  }
+}
+function criarCartao(tarefa, depois) {
+  const el = document.createElement('article');
+  el.className = 'job';
+  el.dataset.s = 'fila';
+  el.innerHTML = `<header>${seloPlataforma(tarefa.plataforma)}<b class="jt">${escaparHtml(tarefa.url)}</b><span class="badge plain">${tarefa.modo === 'audio' ? 'áudio' : tarefa.modo === 'mute' ? 'sem som' : 'vídeo'}</span><button class="x" aria-label="Remover">×</button></header><div class="bar"><i></i></div><p class="jm">Na fila…</p><div class="jp"></div><div class="ja"></div>`;
+  el.querySelector('.x').onclick = () => {
+    tarefa.cancelada = true;
+    tarefa.controle.abort();
+    if (tarefa.urlLocal) URL.revokeObjectURL(tarefa.urlLocal);
+    el.remove();
+    tarefas.delete(tarefa.id);
+  };
+  if (depois && depois.isConnected) depois.after(el);
+  else $('#jobs').prepend(el);
+  tarefa.cartao = el;
+}
+function atualizarCartao(tarefa, s, mensagem, pct) {
+  const e = tarefa.cartao;
+  if (!e) return;
+  e.dataset.s = s;
+  if (mensagem != null) e.querySelector('.jm').textContent = mensagem;
+  if (pct != null) e.querySelector('.bar i').style.width = (pct * 100).toFixed(1) + '%';
+}
+const limparAcoes = tarefa => {
+  const a = tarefa.cartao.querySelector('.ja');
+  a.innerHTML = '';
+  return a;
+};
+
+// O cobalt responde de três jeitos: tunnel/redirect (um arquivo), picker (galeria
+// de fotos e vídeos, comum no TikTok e Instagram) ou local-processing (faixas separadas).
+async function executarTarefa(tarefa) {
+  atualizarCartao(tarefa, 'analisando', 'Consultando a instância…');
+  const { r } = await consultarInstancias(tarefa.url, tarefa.modo);
+  if (tarefa.cancelada) return;
+  if (r.status === 'picker') {
+    tarefa.itens = r.picker || [];
+    tarefa.audioFundo = r.audio;
+    tarefa.nomeAudio = r.audioFilename;
+    atualizarCartao(
+      tarefa,
+      'picker',
+      `${tarefa.itens.length} itens encontrados. Escolha o que baixar.`,
+      1
+    );
+    mostrarGaleria(tarefa);
+    registrarHistorico(tarefa, `${tarefa.itens.length} itens`);
+    return;
+  }
+  if (r.status === 'local-processing') {
+    const t = r.tunnel || [];
+    const nomeArquivo = r.output?.filename || 'arquivo';
+    if (t.length === 1) return baixarResultado(tarefa, t[0], nomeArquivo);
+    tarefa.faixas = t;
+    atualizarCartao(
+      tarefa,
+      'link',
+      'A instância mandou vídeo e áudio separados. Baixe as duas faixas.',
+      1
+    );
+    const a = limparAcoes(tarefa);
+    t.forEach((u, i) =>
+      criarBotao(
+        a,
+        i ? 'Faixa de áudio' : 'Faixa de vídeo',
+        b => baixarFaixa(tarefa, u, `${semExtensao(nomeArquivo)}_${i ? 'audio' : 'video'}`, b),
+        'p'
+      )
+    );
+    registrarHistorico(tarefa, nomeArquivo);
+    return;
+  }
+  if (r.status === 'tunnel' || r.status === 'redirect') {
+    const nomeArquivo = r.filename || `${tarefa.plataforma?.id || 'midia'}_${Date.now()}`;
+    tarefa.cartao.querySelector('.jt').textContent = nomeArquivo;
+    await baixarResultado(tarefa, r.url, nomeArquivo);
+    return;
+  }
+  throw new Error('Resposta inesperada da instância');
+}
+async function baixarFaixa(tarefa, u, nomeArquivo, b) {
+  b.disabled = true;
+  try {
+    const bl = await baixarComProgresso(u, tarefa.controle.signal);
+    baixarArquivo(bl, nomeArquivo + '.' + extensaoPorMime(bl.type, 'bin'));
+  } catch {
+    baixarArquivo(u, nomeArquivo);
+  }
+  b.disabled = false;
+}
+
+// Se o navegador não puder ler o arquivo (CORS), mostramos o link direto para abrir.
+async function baixarResultado(tarefa, url, nome) {
+  atualizarCartao(tarefa, 'baixando', 'Conectando…', 0);
+  const bar = tarefa.cartao.querySelector('.bar');
+  let blob;
+  try {
+    blob = await baixarComProgresso(url, tarefa.controle.signal, (recebido, total, velocidade) => {
+      bar.classList.toggle('ind', !total);
+      atualizarCartao(
+        tarefa,
+        'baixando',
+        `Baixando · ${formatarBytes(recebido)}${total ? ' de ' + formatarBytes(total) : ''} · ${formatarBytes(velocidade)}/s`,
+        total ? Math.min(1, recebido / total) : null
+      );
+    });
+  } catch (e) {
+    if (e.name === 'AbortError') throw e;
+    tarefa.linkDireto = url;
+    tarefa.nome = nome;
+    atualizarCartao(
+      tarefa,
+      'link',
+      'O navegador não pôde ler o arquivo direto. Abra o link para salvar.',
+      1
+    );
+    mostrarLinkDireto(tarefa);
+    registrarHistorico(tarefa, nome);
+    return;
+  } finally {
+    bar.classList.remove('ind');
+  }
+  if (!blob.size)
+    throw new Error(
+      'A instância devolveu um arquivo vazio. Troque qualidade/codec ou tente outra instância.'
+    );
+  const temTrecho = tarefa.trecho[0] != null || tarefa.trecho[1] != null;
+  if (tarefa.modo === 'audio' && temTrecho) {
+    atualizarCartao(tarefa, 'baixando', 'Cortando o trecho…', 1);
+    try {
+      const fm = config.af === 'wav' ? 'wav' : 'mp3';
+      blob = await cortarAudio(blob, tarefa.trecho, fm, +config.ab || 192);
+      nome = semExtensao(nome) + '_trecho.' + fm;
+    } catch (e) {
+      aviso('Não deu para cortar: ' + e.message, 'err');
+    }
+  }
+  tarefa.arquivo = blob;
+  tarefa.nome = nome;
+  tarefa.urlLocal = URL.createObjectURL(blob);
+  const k = tipoDeMidia(blob, nome);
+  atualizarCartao(tarefa, 'pronto', `Pronto · ${formatarBytes(blob.size)} · ${k}`, 1);
+  mostrarConcluido(tarefa);
+  registrarHistorico(tarefa, nome);
+  if (config.autoSave) baixarArquivo(blob, nome);
+  if (tarefa.modo !== 'audio' && temTrecho && k === 'vídeo') {
+    await carregarVideo(blob, nome, tarefa.trecho);
+    abrirAba('video');
+    aviso('Trecho marcado. Ajuste e clique em “Exportar corte”.');
+  } else if (config.autoEdit) {
+    if (k === 'áudio') {
+      abrirAba('audio');
+      carregarAudio(blob, nome);
+    } else if (k === 'vídeo') {
+      abrirAba('video');
+      carregarVideo(blob, nome);
+    }
+  }
+}
+function mostrarConcluido(tarefa) {
+  const k = tipoDeMidia(tarefa.arquivo, tarefa.nome);
+  const jp = tarefa.cartao.querySelector('.jp');
+  jp.innerHTML =
+    k === 'vídeo'
+      ? `<video controls playsinline preload="metadata" src="${tarefa.urlLocal}"></video>`
+      : k === 'áudio'
+        ? `<audio controls preload="metadata" src="${tarefa.urlLocal}"></audio>`
+        : k === 'imagem'
+          ? `<img alt="" src="${tarefa.urlLocal}">`
+          : '';
+  const a = limparAcoes(tarefa);
+  criarBotao(a, 'Salvar', () => baixarArquivo(tarefa.arquivo, tarefa.nome), 'p');
+  if (podeCompartilhar(tarefa.arquivo))
+    criarBotao(a, 'Compartilhar', () => compartilhar(tarefa.arquivo, tarefa.nome));
+  if (k === 'áudio' || k === 'vídeo')
+    criarBotao(a, 'Editar áudio', () => {
+      abrirAba('audio');
+      carregarAudio(tarefa.arquivo, tarefa.nome);
+    });
+  if (k === 'vídeo') {
+    criarBotao(a, 'Editar vídeo', () => {
+      abrirAba('video');
+      carregarVideo(tarefa.arquivo, tarefa.nome);
+    });
+    criarBotao(a, 'Converter p/ MP3', b => converterParaMp3(tarefa, b));
+  }
+  if (k === 'áudio' && !/\.mp3$/i.test(tarefa.nome))
+    criarBotao(a, 'Converter p/ MP3', b => converterParaMp3(tarefa, b));
+  adicionarCapasYoutube(tarefa, a);
+  criarBotao(a, 'Copiar link', () => copiar(tarefa.url), 'ghost');
+}
+function mostrarLinkDireto(tarefa) {
+  const a = limparAcoes(tarefa);
+  const l = document.createElement('a');
+  l.className = 'btn sm p';
+  l.href = tarefa.linkDireto;
+  l.target = '_blank';
+  l.rel = 'noopener';
+  l.download = tarefa.nome || '';
+  l.textContent = 'Abrir / salvar arquivo';
+  a.append(l);
+  criarBotao(a, 'Copiar link direto', () => copiar(tarefa.linkDireto));
+  adicionarCapasYoutube(tarefa, a);
+}
+function mostrarFalha(tarefa) {
+  const a = limparAcoes(tarefa);
+  criarBotao(
+    a,
+    'Tentar de novo',
+    () => {
+      tarefa.cartao.remove();
+      tarefas.delete(tarefa.id);
+      adicionarNaFila(tarefa.url, tarefa.modo);
+    },
+    'p'
+  );
+  criarBotao(a, 'Abrir no cobalt.tools', () => {
+    copiar(tarefa.url, 'Link copiado. Cole no cobalt.tools');
+    open('https://cobalt.tools/#' + tarefa.url, '_blank', 'noopener');
+  });
+  criarBotao(a, 'Comando yt-dlp', () => {
+    $('#ytUrl').value = tarefa.url;
+    $('#ytType').value = tarefa.modo === 'audio' ? 'mp3' : 'mp4';
+    abrirAba('ytdlp');
+  });
+  adicionarCapasYoutube(tarefa, a);
+  if (/instância|offline|Config/.test(tarefa.cartao.querySelector('.jm').textContent))
+    criarBotao(a, 'Config', () => abrirAba('config'), 'ghost');
+}
+function adicionarCapasYoutube(tarefa, a) {
+  const id = idDoYoutube(tarefa.url);
+  if (!id) return;
+  criarBotao(
+    a,
+    'Capas HD',
+    b => {
+      b.remove();
+      const box = document.createElement('div');
+      box.className = 'pick';
+      box.innerHTML = [
+        ['maxresdefault', '1280×720'],
+        ['sddefault', '640×480'],
+        ['hqdefault', '480×360'],
+        ['mqdefault', '320×180'],
+      ]
+        .map(
+          ([k, l]) =>
+            `<div class="pk wide"><img alt="" src="https://i.ytimg.com/vi/${id}/${k}.jpg"><span class="t">${l}</span><button class="btn sm" data-th="${k}">Baixar</button></div>`
+        )
+        .join('');
+      box.onclick = async e => {
+        const t = e.target.closest('[data-th]');
+        if (!t) return;
+        const u = `https://i.ytimg.com/vi/${id}/${t.dataset.th}.jpg`;
+        try {
+          baixarArquivo(await baixarComProgresso(u), `capa_${id}_${t.dataset.th}.jpg`);
+        } catch {
+          baixarArquivo(u, '');
+        }
+      };
+      tarefa.cartao.querySelector('.jp').append(box);
+    },
+    'ghost'
+  );
+}
+function mostrarGaleria(tarefa) {
+  const jp = tarefa.cartao.querySelector('.jp');
+  jp.innerHTML = `<div class="pick">${tarefa.itens.map((it, i) => `<div class="pk"><img alt="" loading="lazy" referrerpolicy="no-referrer" src="${escaparHtml(it.thumb || it.url)}" onerror="this.style.opacity=.08"><label class="tg"><input type="checkbox" checked data-i="${i}" aria-label="Selecionar item ${i + 1}"></label><span class="t">${escaparHtml(it.type === 'photo' ? 'foto' : it.type || 'item')} ${i + 1}</span><button class="btn sm" data-dl="${i}">Baixar</button></div>`).join('')}</div>`;
+  jp.onclick = e => {
+    const b = e.target.closest('[data-dl]');
+    if (b) baixarItemGaleria(tarefa, +b.dataset.dl, b);
+  };
+  const a = limparAcoes(tarefa);
+  criarBotao(
+    a,
+    'Baixar selecionados',
+    async b => {
+      b.disabled = true;
+      for (const c of $$('input[data-i]:checked', jp))
+        await baixarItemGaleria(tarefa, +c.dataset.i, c.closest('.pk').querySelector('[data-dl]'));
+      b.disabled = false;
+    },
+    'p'
+  );
+  if (tarefa.audioFundo) criarBotao(a, 'Áudio de fundo', b => baixarItemGaleria(tarefa, -1, b));
+}
+async function baixarItemGaleria(tarefa, i, botao) {
+  const it = i < 0 ? { url: tarefa.audioFundo, type: 'audio' } : tarefa.itens[i];
+  const instancia =
+    i < 0
+      ? semExtensao(tarefa.nomeAudio || 'audio')
+      : `${(tarefa.plataforma?.name || 'midia').toLowerCase().replace(/\W+/g, '')}_${i + 1}`;
+  const def =
+    it.type === 'photo' ? 'jpg' : it.type === 'gif' ? 'gif' : it.type === 'audio' ? 'mp3' : 'mp4';
+  const t = botao.textContent;
+  botao.disabled = true;
+  botao.textContent = '…';
+  try {
+    const b = await baixarComProgresso(it.url, tarefa.controle.signal);
+    baixarArquivo(b, instancia + '.' + extensaoPorMime(b.type, def));
+    botao.textContent = 'Salvo';
+  } catch {
+    baixarArquivo(it.url, instancia + '.' + def);
+    botao.textContent = 'Aberto';
+  }
+  botao.disabled = false;
+  setTimeout(() => (botao.textContent = t), 2500);
+}
+
+// ===== Histórico =====
+function registrarHistorico(tarefa, nome) {
+  const H = armazenamento.get('h', []);
+  H.unshift({
+    url: tarefa.url,
+    p: tarefa.plataforma?.id || '',
+    name: nome,
+    mode: tarefa.modo,
+    t: Date.now(),
+  });
+  armazenamento.set('h', H.slice(0, 200));
+}
+const formatoRelativo =
+  window.Intl && Intl.RelativeTimeFormat
+    ? new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' })
+    : null;
+function tempoAtras(t) {
+  if (!formatoRelativo) return new Date(t).toLocaleString('pt-BR');
+  const s = (t - Date.now()) / 1000;
+  const u = [
+    [60, 'second'],
+    [3600, 'minute'],
+    [86400, 'hour'],
+    [604800, 'day'],
+    [2629800, 'week'],
+    [Infinity, 'month'],
+  ];
+  const d = [1, 60, 3600, 86400, 604800, 2629800];
+  for (let i = 0; i < u.length; i++)
+    if (Math.abs(s) < u[i][0]) return formatoRelativo.format(Math.round(s / d[i]), u[i][1]);
+  return '';
+}
+function renderizarHistorico() {
+  const H = armazenamento.get('h', []);
+  const el = $('#histList');
+  if (!H.length) {
+    el.innerHTML =
+      '<p class="muted">Nada por aqui ainda. O que você baixar aparece nesta lista.</p>';
+    return;
+  }
+  el.innerHTML = H.map((h, i) => {
+    const p = PLATAFORMAS.find(x => x[0] === h.p);
+    return `<div class="hi">${p ? `<span class="badge" style="--c:${p[3]}">${escaparHtml(p[1])}</span>` : '<span class="badge">link</span>'}<div class="u">${escaparHtml(h.name || h.url)}<small>${escaparHtml(h.url)} · ${tempoAtras(h.t)} · ${h.mode === 'audio' ? 'áudio' : h.mode === 'mute' ? 'sem som' : 'vídeo'}</small></div><div class="row"><button class="btn sm" data-hr="${i}">Puxar de novo</button><button class="btn sm ghost" data-hc="${i}">Copiar</button><button class="x" data-hd="${i}" aria-label="Apagar">×</button></div></div>`;
+  }).join('');
+}
+$('#histList').onclick = e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  const H = armazenamento.get('h', []);
+  if (b.dataset.hr) {
+    const h = H[+b.dataset.hr];
+    abrirAba('baixar');
+    adicionarNaFila(h.url, h.mode);
+  }
+  if (b.dataset.hc) copiar(H[+b.dataset.hc].url);
+  if (b.dataset.hd) {
+    H.splice(+b.dataset.hd, 1);
+    armazenamento.set('h', H);
+    renderizarHistorico();
+  }
+};
+$('#hClr').onclick = () => {
+  if (confirm('Apagar todo o histórico?')) {
+    armazenamento.set('h', []);
+    renderizarHistorico();
+  }
+};
+$('#hExp').onclick = () =>
+  baixarArquivo(
+    new Blob([JSON.stringify(armazenamento.get('h', []), null, 2)], { type: 'application/json' }),
+    'puxa-historico.json'
+  );
+
+// ===== Config =====
+$('#instList').value = config.instances.join('\n');
+$('#instList').addEventListener('change', e => {
+  config.instances = e.target.value
+    .split(/\s+/)
+    .map(x => x.trim())
+    .filter(Boolean)
+    .map(x => (/^https?:\/\//.test(x) ? x : 'http://' + x));
+  e.target.value = config.instances.join('\n');
+  salvarConfig();
+  atualizarStatusInstancia();
+});
+$('#resetCfg').onclick = () => {
+  Object.assign(config, PADRAO);
+  salvarConfig();
+  location.reload();
+};
+$('#testInst').onclick = async b => {
+  const saida = $('#instRes');
+  saida.innerHTML = '';
+  $('#testInst').disabled = true;
+  for (const instancia of config.instances) {
+    const row = document.createElement('div');
+    row.className = 'hi';
+    row.innerHTML = `<span class="badge">…</span><div class="u">${escaparHtml(instancia)}<small>testando…</small></div><span></span>`;
+    saida.append(row);
+    const r = await testarInstancia(instancia, 7000);
+    row.innerHTML = r.ok
+      ? `<span class="badge" style="--c:var(--ok)">online</span><div class="u">${escaparHtml(instancia)}<small>cobalt v${escaparHtml(r.v)} · ${r.ms} ms · ${r.sv.length} plataformas</small></div><span></span>`
+      : `<span class="badge" style="--c:var(--err)">falhou</span><div class="u">${escaparHtml(instancia)}<small>${escaparHtml(r.err)}</small></div><span></span>`;
+  }
+  $('#testInst').disabled = false;
+  atualizarStatusInstancia();
+};
+
+// ===== Gerador de comando yt-dlp =====
+function montarComandoYtdlp() {
+  const urls = $('#ytUrl').value.trim().split(/\s+/).filter(Boolean);
+  const t = $('#ytType').value;
+  const a = ['yt-dlp'];
+  const audio = /mp3|m4a|wav|opus/.test(t);
+  const F = {
+    best: ['-f', '"bv*+ba/b"'],
+    mp4: ['-f', '"bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b"', '--merge-output-format', 'mp4'],
+    1080: ['-f', '"bv*[height<=1080]+ba/b[height<=1080]"', '--merge-output-format', 'mp4'],
+    720: ['-f', '"bv*[height<=720]+ba/b[height<=720]"', '--merge-output-format', 'mp4'],
+    mp3: ['-x', '--audio-format', 'mp3', '--audio-quality', '0'],
+    m4a: ['-x', '--audio-format', 'm4a'],
+    wav: ['-x', '--audio-format', 'wav'],
+    opus: ['-x', '--audio-format', 'opus'],
+    vonly: ['-f', '"bv*"'],
+  };
+  a.push(...F[t]);
+  const A = $('#ytA').value.trim();
+  const B = $('#ytB').value.trim();
+  if (A || B)
+    a.push('--download-sections', `"*${A || '0'}-${B || 'inf'}"`, '--force-keyframes-at-cuts');
+  if ($('#ytSubs').checked && !audio)
+    a.push('--write-subs', '--write-auto-subs', '--sub-langs', '"pt.*,en.*"', '--embed-subs');
+  if ($('#ytThumb').checked && t !== 'wav') a.push('--embed-thumbnail');
+  if ($('#ytMeta').checked) a.push('--embed-metadata');
+  if ($('#ytSB').checked) a.push('--sponsorblock-remove', 'sponsor,selfpromo,interaction');
+  a.push($('#ytPl').value === 'yes' ? '--yes-playlist' : '--no-playlist');
+  const ck = $('#ytCk').value;
+  if (ck) a.push('--cookies-from-browser', ck);
+  a.push('-o', `"${$('#ytOut').value}"`);
+  a.push(...(urls.length ? urls : ['LINK_AQUI']).map(u => `"${u}"`));
+  $('#ytCmd').textContent = a.join(' ');
+}
+$$('#p-ytdlp input,#p-ytdlp select').forEach(el =>
+  el.addEventListener(
+    el.type === 'checkbox' || el.tagName === 'SELECT' ? 'change' : 'input',
+    montarComandoYtdlp
+  )
+);
+$('#ytCopy').onclick = () => copiar($('#ytCmd').textContent, 'Comando copiado');
+$('#ytInstall').innerHTML = [
+  ['Windows', 'winget install yt-dlp.yt-dlp Gyan.FFmpeg'],
+  ['macOS', 'brew install yt-dlp ffmpeg'],
+  ['Linux', 'pipx install yt-dlp && sudo apt install ffmpeg'],
+]
+  .map(
+    ([o, c], i) =>
+      `<div class="row"><span class="badge plain" style="min-width:74px">${o}</span><code id="ins${i}" style="flex:1;min-width:0;overflow-wrap:anywhere">${c}</code><button class="btn sm ghost" data-copy="#ins${i}">Copiar</button></div>`
+  )
+  .join('');
+
+// ===== Áudio: buffers e codificadores =====
+const novoBuffer = (ch, len, sr) =>
+  new AudioBuffer({ numberOfChannels: ch, length: Math.max(1, len | 0), sampleRate: sr });
+function recortarBuffer(b, s0, s1) {
+  s0 = limitar(s0 | 0, 0, b.length);
+  s1 = limitar(s1 | 0, s0, b.length);
+  const o = novoBuffer(b.numberOfChannels, s1 - s0, b.sampleRate);
+  for (let c = 0; c < b.numberOfChannels; c++)
+    o.copyToChannel(b.getChannelData(c).subarray(s0, s1), c);
+  return o;
+}
+function juntarBuffers(lista) {
+  const ch = Math.max(...lista.map(b => b.numberOfChannels));
+  const o = novoBuffer(
+    ch,
+    lista.reduce((a, b) => a + b.length, 0),
+    lista[0].sampleRate
+  );
+  let off = 0;
+  for (const b of lista) {
+    for (let c = 0; c < ch; c++)
+      o.copyToChannel(b.getChannelData(Math.min(c, b.numberOfChannels - 1)), c, off);
+    off += b.length;
+  }
+  return o;
+}
+const clonarBuffer = b => recortarBuffer(b, 0, b.length);
+
+// WAV PCM 16 bits montado na mão: cabeçalho de 44 bytes + amostras intercaladas.
+function codificarWav(b) {
+  const ch = b.numberOfChannels;
+  const sr = b.sampleRate;
+  const n = b.length;
+  const bytes = n * ch * 2;
+  const ab = new ArrayBuffer(44 + bytes);
+  const v = new DataView(ab);
+  const W = (o, s) => {
+    for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i));
+  };
+  W(0, 'RIFF');
+  v.setUint32(4, 36 + bytes, true);
+  W(8, 'WAVE');
+  W(12, 'fmt ');
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);
+  v.setUint16(22, ch, true);
+  v.setUint32(24, sr, true);
+  v.setUint32(28, sr * ch * 2, true);
+  v.setUint16(32, ch * 2, true);
+  v.setUint16(34, 16, true);
+  W(36, 'data');
+  v.setUint32(40, bytes, true);
+  const pcm = new Int16Array(ab, 44);
+  const d = [];
+  for (let c = 0; c < ch; c++) d.push(b.getChannelData(c));
+  for (let i = 0, o = 0; i < n; i++)
+    for (let c = 0; c < ch; c++) {
+      const s = d[c][i];
+      pcm[o++] = s < -1 ? -32768 : s > 1 ? 32767 : s < 0 ? s * 32768 : s * 32767;
+    }
+  return new Blob([ab], { type: 'audio/wav' });
+}
+
+// MP3 usa o lamejs, carregado da CDN só na primeira vez que alguém exporta em MP3.
+let carregandoLame;
+const URLS_LAME = [
+  'https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js',
+  'https://unpkg.com/lamejs@1.2.1/lame.min.js',
+];
+function carregarLame() {
+  return (
+    carregandoLame ||
+    (carregandoLame = (async () => {
+      for (const u of URLS_LAME) {
+        if (window.lamejs) break;
+        await new Promise(r => {
+          const s = document.createElement('script');
+          s.src = u;
+          s.onload = s.onerror = r;
+          document.head.append(s);
+        });
+      }
+      if (window.lamejs) return window.lamejs;
+      carregandoLame = null;
+      throw new Error('Sem internet para carregar o codificador MP3. Exporte em WAV.');
+    })())
+  );
+}
+async function reamostrar(b, sr) {
+  const oc = new OfflineAudioContext(b.numberOfChannels, Math.ceil(b.duration * sr), sr);
+  const s = oc.createBufferSource();
+  s.buffer = b;
+  s.connect(oc.destination);
+  s.start();
+  return oc.startRendering();
+}
+const paraInt16 = f => {
+  const o = new Int16Array(f.length);
+  for (let i = 0; i < f.length; i++) {
+    const s = f[i];
+    o[i] = s < -1 ? -32768 : s > 1 ? 32767 : s < 0 ? s * 32768 : s * 32767;
+  }
+  return o;
+};
+
+// O lamejs aceita só algumas taxas de amostragem; fora delas, reamostramos para 44,1 kHz.
+// A cada ~300 blocos devolvemos o controle para o navegador não congelar.
+async function codificarMp3(b, kbps = 192, aoProgredir) {
+  const lame = await carregarLame();
+  if (![8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000].includes(b.sampleRate))
+    b = await reamostrar(b, 44100);
+  const ch = Math.min(2, b.numberOfChannels);
+  const enc = new lame.Mp3Encoder(ch, b.sampleRate, kbps);
+  const L = paraInt16(b.getChannelData(0));
+  const R = ch > 1 ? paraInt16(b.getChannelData(1)) : null;
+  const saida = [];
+  const K = 1152;
+  for (let i = 0; i < L.length; i += K) {
+    const m =
+      ch > 1
+        ? enc.encodeBuffer(L.subarray(i, i + K), R.subarray(i, i + K))
+        : enc.encodeBuffer(L.subarray(i, i + K));
+    if (m.length) saida.push(new Int8Array(m));
+    if (i % (K * 300) === 0) {
+      aoProgredir && aoProgredir(i / L.length);
+      await esperar(0);
+    }
+  }
+  const e = enc.flush();
+  if (e.length) saida.push(new Int8Array(e));
+  aoProgredir && aoProgredir(1);
+  return new Blob(saida, { type: 'audio/mpeg' });
+}
+async function cortarAudio(blob, [a, b], formato, kbps) {
+  const buffer = await obterContextoAudio().decodeAudioData(await blob.arrayBuffer());
+  const sr = buffer.sampleRate;
+  const s0 = Math.round(limitar(a ?? 0, 0, buffer.duration) * sr);
+  const s1 = Math.round(limitar(b ?? buffer.duration, 0, buffer.duration) * sr);
+  if (s1 - s0 < sr * 0.05) throw new Error('trecho inválido');
+  const trecho = recortarBuffer(buffer, s0, s1);
+  return formato === 'wav' ? codificarWav(trecho) : codificarMp3(trecho, kbps);
+}
+async function converterParaMp3(tarefa, b) {
+  const t = b.textContent;
+  b.disabled = true;
+  b.textContent = 'Lendo…';
+  try {
+    const buffer = await obterContextoAudio().decodeAudioData(await tarefa.arquivo.arrayBuffer());
+    const m = await codificarMp3(
+      buffer,
+      +config.ab || 256,
+      p => (b.textContent = `MP3 ${Math.round(p * 100)}%`)
+    );
+    entregar(m, semExtensao(tarefa.nome) + '.mp3');
+  } catch (e) {
+    aviso(e.message || 'Não deu para converter', 'err');
+  }
+  b.disabled = false;
+  b.textContent = t;
+}
+
+// ===== Motor de efeitos (Web Audio) =====
+let contextoAudio;
+const obterContextoAudio = () =>
+  contextoAudio || (contextoAudio = new (window.AudioContext || window.webkitAudioContext)());
+const reverbsProntos = {};
+// Reverb sem arquivo de impulso: ruído com decaimento exponencial já soa natural.
+function criarReverb(sr) {
+  if (reverbsProntos[sr]) return reverbsProntos[sr];
+  const len = (sr * 2.6) | 0;
+  const b = new AudioBuffer({ numberOfChannels: 2, length: len, sampleRate: sr });
+  for (let c = 0; c < 2; c++) {
+    const d = b.getChannelData(c);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.4);
+  }
+  return (reverbsProntos[sr] = b);
+}
+
+// A mesma cadeia serve para a prévia ao vivo e para exportar (OfflineAudioContext).
+// fonte → graves → agudos → [rádio] → volume → [reverb] → [8D] → saída
+function montarCadeiaEfeitos(c, buffer, efeitos, destino) {
+  const origem = c.createBufferSource();
+  origem.buffer = buffer;
+  origem.playbackRate.value = efeitos.rate;
+  const lo = c.createBiquadFilter();
+  lo.type = 'lowshelf';
+  lo.frequency.value = 180;
+  lo.gain.value = efeitos.bass;
+  const hi = c.createBiquadFilter();
+  hi.type = 'highshelf';
+  hi.frequency.value = 3800;
+  hi.gain.value = efeitos.treble;
+  origem.connect(lo);
+  lo.connect(hi);
+  let n = hi;
+  if (efeitos.tel) {
+    const hp = c.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 380;
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 3200;
+    const ws = c.createWaveShaper();
+    const cv = new Float32Array(1024);
+    for (let i = 0; i < 1024; i++) {
+      const x = i / 511.5 - 1;
+      cv[i] = Math.tanh(x * 2.2);
+    }
+    ws.curve = cv;
+    n.connect(hp);
+    hp.connect(lp);
+    lp.connect(ws);
+    n = ws;
+  }
+  const g = c.createGain();
+  g.gain.value = Math.pow(10, efeitos.vol / 20);
+  n.connect(g);
+  n = g;
+  const saida = c.createGain();
+  if (efeitos.rev > 0) {
+    const conv = c.createConvolver();
+    conv.buffer = criarReverb(c.sampleRate);
+    const wet = c.createGain();
+    const dry = c.createGain();
+    wet.gain.value = (efeitos.rev / 100) * 0.9;
+    dry.gain.value = 1 - (efeitos.rev / 100) * 0.4;
+    n.connect(dry);
+    dry.connect(saida);
+    n.connect(conv);
+    conv.connect(wet);
+    wet.connect(saida);
+  } else n.connect(saida);
+  let last = saida;
+  if (efeitos.d8 && c.createStereoPanner) {
+    const p = c.createStereoPanner();
+    const o = c.createOscillator();
+    const og = c.createGain();
+    o.frequency.value = 0.16;
+    og.gain.value = 0.95;
+    o.connect(og);
+    og.connect(p.pan);
+    o.start();
+    saida.connect(p);
+    last = p;
+    origem.addEventListener('ended', () => {
+      try {
+        o.stop();
+      } catch {}
+    });
+  }
+  last.connect(destino);
+  return origem;
+}
+const EFEITOS_NEUTROS = { rate: 1, bass: 0, treble: 0, rev: 0, vol: 0, d8: false, tel: false };
+const semEfeitos = f => Object.keys(EFEITOS_NEUTROS).every(k => f[k] === EFEITOS_NEUTROS[k]);
+async function aplicarEfeitos(trecho, efeitos) {
+  if (semEfeitos(efeitos)) return trecho;
+  const cauda = efeitos.rev > 0 ? 2.6 : 0;
+  const ch = efeitos.d8 || efeitos.rev > 0 ? 2 : trecho.numberOfChannels;
+  const len = Math.ceil((trecho.duration / efeitos.rate + cauda) * trecho.sampleRate);
+  const oc = new OfflineAudioContext(ch, len, trecho.sampleRate);
+  montarCadeiaEfeitos(oc, trecho, efeitos, oc.destination).start(0);
+  return oc.startRendering();
+}
+
+// ===== Editor de áudio =====
+const editorAudio = {
+  buffer: null,
+  nome: 'audio',
+  desfazer: [],
+  refazer: [],
+  selecao: null,
+  inicioVisivel: 0,
+  fimVisivel: 1,
+  cursor: 0,
+  tocando: false,
+  fonte: null,
+  repetir: false,
+  areaTransferencia: null,
+  efeitos: { ...EFEITOS_NEUTROS },
+  quadro: 0,
+  inicioRelogio: 0,
+  inicioTrecho: 0,
+  velocidade: 1,
+  versao: 0,
+};
+const canvasOnda = $('#wave');
+const ctxOnda = canvasOnda.getContext('2d');
+const ICONE_TOCAR =
+  '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>';
+const ICONE_PAUSAR =
+  '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z"/></svg>';
+const mostrarIconePlay = on => {
+  $('#aePlay').innerHTML = on ? ICONE_PAUSAR : ICONE_TOCAR;
+  $('#aePlay').setAttribute('aria-label', on ? 'Pausar' : 'Tocar');
+};
+mostrarIconePlay(false);
+async function carregarAudio(blob, nome = 'audio') {
+  aviso('Lendo o áudio…');
+  try {
+    const buffer = await obterContextoAudio().decodeAudioData(await blob.arrayBuffer());
+    editorAudio.desfazer = [];
+    editorAudio.refazer = [];
+    editorAudio.nome = semExtensao(nome);
+    $('#aeName').value = editorAudio.nome + '_editado';
+    $('#aeEmpty').hidden = true;
+    definirAudio(buffer, true);
+    aviso('Áudio pronto para editar');
+    return true;
+  } catch (e) {
+    aviso('Não consegui ler o áudio deste arquivo', 'err');
+    return false;
+  }
+}
+function definirAudio(b, fit) {
+  parar();
+  editorAudio.buffer = b;
+  editorAudio.versao++;
+  const d = b.duration;
+  if (fit) {
+    editorAudio.inicioVisivel = 0;
+    editorAudio.fimVisivel = d;
+    editorAudio.selecao = null;
+    editorAudio.cursor = 0;
+  } else {
+    if (editorAudio.fimVisivel > d || editorAudio.fimVisivel - editorAudio.inicioVisivel < 0.01) {
+      editorAudio.inicioVisivel = 0;
+      editorAudio.fimVisivel = d;
+    }
+    if (editorAudio.selecao) {
+      editorAudio.selecao = [
+        Math.min(editorAudio.selecao[0], d),
+        Math.min(editorAudio.selecao[1], d),
+      ];
+      if (editorAudio.selecao[1] - editorAudio.selecao[0] < 1e-3) editorAudio.selecao = null;
+    }
+    editorAudio.cursor = Math.min(editorAudio.cursor, d);
+  }
+  mostrarInfoAudio();
+  atualizarSelecaoUI();
+  desenharOnda();
+}
+function mostrarInfoAudio() {
+  const b = editorAudio.buffer;
+  let pico = 0;
+  for (let c = 0; c < b.numberOfChannels; c++) {
+    const d = b.getChannelData(c);
+    const st = Math.max(1, (d.length / 2000000) | 0);
+    for (let i = 0; i < d.length; i += st) {
+      const v = Math.abs(d[i]);
+      if (v > pico) pico = v;
+    }
+  }
+  $('#aeInfo').textContent =
+    `${editorAudio.nome} · ${formatarTempo(b.duration)} · ${(b.sampleRate / 1000).toFixed(1)} kHz · ${b.numberOfChannels === 1 ? 'mono' : b.numberOfChannels === 2 ? 'estéreo' : b.numberOfChannels + ' canais'} · pico ${pico > 0 ? (20 * Math.log10(pico)).toFixed(1) : '−∞'} dB`;
+}
+function atualizarSelecaoUI() {
+  const s = editorAudio.selecao;
+  $('#aeA').value = s ? formatarTempo(s[0]) : '';
+  $('#aeB').value = s ? formatarTempo(s[1]) : '';
+  $('#aeLen').textContent = s ? '(' + formatarTempo(s[1] - s[0]) + ')' : '';
+  $('#aeTime').textContent = formatarTempo(editorAudio.cursor);
+}
+const pixelParaTempo = x =>
+  editorAudio.inicioVisivel +
+  (x / canvasOnda.clientWidth) * (editorAudio.fimVisivel - editorAudio.inicioVisivel);
+const tempoParaPixel = t =>
+  ((t - editorAudio.inicioVisivel) / (editorAudio.fimVisivel - editorAudio.inicioVisivel)) *
+  canvasOnda.clientWidth;
+
+// A onda é desenhada uma vez num canvas fora da tela e só é refeita quando muda o zoom
+// ou o áudio. Tocando, só o cursor é redesenhado, o que deixa tudo leve no celular.
+const cacheOnda = document.createElement('canvas');
+const ctxCache = cacheOnda.getContext('2d');
+let chaveCache = '';
+function desenharOndaNoCache(W, H, dpr) {
+  cacheOnda.width = Math.round(W * dpr);
+  cacheOnda.height = Math.round(H * dpr);
+  const g = ctxCache;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.fillStyle = '#111114';
+  g.fillRect(0, 0, W, H);
+  const RH = 22;
+  g.fillStyle = '#0D0D10';
+  g.fillRect(0, 0, W, RH);
+  g.fillStyle = '#25252C';
+  g.fillRect(0, RH, W, 1);
+  if (!editorAudio.buffer) return;
+  const b = editorAudio.buffer;
+  const sr = b.sampleRate;
+  const janela = editorAudio.fimVisivel - editorAudio.inicioVisivel;
+  const meio = RH + (H - RH) / 2;
+  const amp = (H - RH) / 2 - 8;
+  g.fillStyle = '#1E1E24';
+  g.fillRect(0, meio, W, 1);
+  const chs = [];
+  for (let c = 0; c < b.numberOfChannels; c++) chs.push(b.getChannelData(c));
+  const n = Math.round(W * dpr);
+  const spp = (janela * sr) / n;
+  const st = Math.max(1, Math.floor(spp / 96));
+  const s0 = editorAudio.inicioVisivel * sr;
+  g.fillStyle = '#BDB9B2';
+  for (let x = 0; x < n; x++) {
+    const i0 = Math.floor(s0 + x * spp);
+    const i1 = Math.min(b.length, Math.max(i0 + 1, Math.floor(s0 + (x + 1) * spp)));
+    if (i0 >= b.length || i0 < 0) continue;
+    let mn = 1;
+    let mx = -1;
+    for (const d of chs)
+      for (let i = i0; i < i1; i += st) {
+        const v = d[i];
+        if (v < mn) mn = v;
+        if (v > mx) mx = v;
+      }
+    g.fillRect(x / dpr, meio - mx * amp, 1 / dpr, Math.max(1 / dpr, (mx - mn) * amp));
+  }
+  const steps = [
+    1e-3, 5e-3, 0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1800,
+  ];
+  const stp = steps.find(s => (s / janela) * W >= 84) || 3600;
+  g.fillStyle = '#6E6D75';
+  g.font = '500 10px ui-monospace,Menlo,Consolas,monospace';
+  g.textBaseline = 'middle';
+  for (let k = Math.ceil(editorAudio.inicioVisivel / stp); k * stp <= editorAudio.fimVisivel; k++) {
+    const t = k * stp;
+    const x = ((t - editorAudio.inicioVisivel) / janela) * W;
+    g.fillRect(x, RH - 6, 1, 6);
+    g.fillText(formatarTempo(t, stp < 0.01 ? 3 : stp < 1 ? 2 : 0), x + 4, RH / 2);
+  }
+}
+
+// A seleção pinta a onda de laranja com "multiply" por cima do cache, sem redesenhar a onda.
+function desenharOnda() {
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  const W = canvasOnda.clientWidth;
+  const H = canvasOnda.clientHeight;
+  if (!W) return;
+  const PW = Math.round(W * dpr);
+  const PH = Math.round(H * dpr);
+  if (canvasOnda.width !== PW || canvasOnda.height !== PH) {
+    canvasOnda.width = PW;
+    canvasOnda.height = PH;
+  }
+  const key = [
+    PW,
+    PH,
+    editorAudio.inicioVisivel,
+    editorAudio.fimVisivel,
+    editorAudio.versao,
+  ].join();
+  if (key !== chaveCache) {
+    chaveCache = key;
+    desenharOndaNoCache(W, H, dpr);
+  }
+  const g = ctxOnda;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, PW, PH);
+  g.drawImage(cacheOnda, 0, 0);
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (!editorAudio.buffer) return;
+  const RH = 22;
+  if (editorAudio.selecao) {
+    const sa = tempoParaPixel(editorAudio.selecao[0]);
+    const sb = tempoParaPixel(editorAudio.selecao[1]);
+    g.globalCompositeOperation = 'multiply';
+    g.fillStyle = '#FF6A40';
+    g.fillRect(sa, RH + 1, sb - sa, H - RH);
+    g.globalCompositeOperation = 'source-over';
+    g.fillStyle = 'rgba(255,74,28,.1)';
+    g.fillRect(sa, RH + 1, sb - sa, H - RH);
+    g.fillStyle = '#FF4A1C';
+    g.fillRect(sa, RH + 1, 1, H - RH);
+    g.fillRect(sb - 1, RH + 1, 1, H - RH);
+  }
+  const px = tempoParaPixel(editorAudio.cursor);
+  if (px >= 0 && px <= W) {
+    g.fillStyle = '#FFB020';
+    g.fillRect(px - 0.75, 0, 1.5, H);
+    g.beginPath();
+    g.moveTo(px - 5, 0);
+    g.lineTo(px + 5, 0);
+    g.lineTo(px, 6);
+    g.fill();
+  }
+}
+
+// Mouse e toque: arrastar seleciona, arrastar a borda ajusta, dois dedos dão zoom (pinça).
+let arraste = null;
+let pinca = null;
+const toques = new Map();
+const toleranciaBorda = e => (e.pointerType === 'touch' ? 22 : 8);
+canvasOnda.addEventListener('pointerdown', e => {
+  if (!editorAudio.buffer) return;
+  canvasOnda.setPointerCapture(e.pointerId);
+  toques.set(e.pointerId, e.offsetX);
+  if (toques.size === 2) {
+    arraste = null;
+    const [a, b] = [...toques.values()];
+    pinca = {
+      d: Math.abs(a - b) || 1,
+      span: editorAudio.fimVisivel - editorAudio.inicioVisivel,
+      t: pixelParaTempo((a + b) / 2),
+    };
+    return;
+  }
+  const x = e.offsetX;
+  const t = limitar(pixelParaTempo(x), 0, editorAudio.buffer.duration);
+  const tolerancia = toleranciaBorda(e);
+  let modo = 'new';
+  if (editorAudio.selecao) {
+    if (Math.abs(x - tempoParaPixel(editorAudio.selecao[0])) < tolerancia) modo = 'a';
+    else if (Math.abs(x - tempoParaPixel(editorAudio.selecao[1])) < tolerancia) modo = 'b';
+  }
+  arraste = { mode: modo, x0: x, t0: t, moved: false };
+});
+canvasOnda.addEventListener('pointermove', e => {
+  if (!editorAudio.buffer) return;
+  const x = e.offsetX;
+  if (toques.has(e.pointerId)) toques.set(e.pointerId, x);
+  if (pinca && toques.size === 2) {
+    const [a, b] = [...toques.values()];
+    const d = editorAudio.buffer.duration;
+    const janela = limitar((pinca.span * pinca.d) / (Math.abs(a - b) || 1), 0.02, d);
+    const v0 = limitar(pinca.t - ((a + b) / 2 / canvasOnda.clientWidth) * janela, 0, d - janela);
+    editorAudio.inicioVisivel = v0;
+    editorAudio.fimVisivel = v0 + janela;
+    desenharOnda();
+    return;
+  }
+  if (!arraste) {
+    if (e.pointerType === 'mouse')
+      canvasOnda.style.cursor =
+        editorAudio.selecao &&
+        (Math.abs(x - tempoParaPixel(editorAudio.selecao[0])) < 8 ||
+          Math.abs(x - tempoParaPixel(editorAudio.selecao[1])) < 8)
+          ? 'ew-resize'
+          : 'crosshair';
+    return;
+  }
+  if (Math.abs(x - arraste.x0) > 4) arraste.moved = true;
+  if (!arraste.moved) return;
+  const t = limitar(pixelParaTempo(x), 0, editorAudio.buffer.duration);
+  if (arraste.mode === 'new')
+    editorAudio.selecao = [Math.min(arraste.t0, t), Math.max(arraste.t0, t)];
+  else {
+    const o = arraste.mode === 'a' ? editorAudio.selecao[1] : editorAudio.selecao[0];
+    if ((arraste.mode === 'a' && t > o) || (arraste.mode === 'b' && t < o))
+      arraste.mode = arraste.mode === 'a' ? 'b' : 'a';
+    editorAudio.selecao = [Math.min(t, o), Math.max(t, o)];
+  }
+  atualizarSelecaoUI();
+  desenharOnda();
+});
+const soltarPonteiro = e => {
+  toques.delete(e.pointerId);
+  if (toques.size < 2) pinca = null;
+  if (!arraste) return;
+  if (e.type === 'pointerup' && !arraste.moved) {
+    editorAudio.selecao = null;
+    editorAudio.cursor = arraste.t0;
+    if (editorAudio.tocando) tocar();
+    atualizarSelecaoUI();
+    desenharOnda();
+  } else if (editorAudio.selecao && editorAudio.selecao[1] - editorAudio.selecao[0] < 5e-3) {
+    editorAudio.selecao = null;
+    desenharOnda();
+  }
+  arraste = null;
+};
+canvasOnda.addEventListener('pointerup', soltarPonteiro);
+canvasOnda.addEventListener('pointercancel', soltarPonteiro);
+canvasOnda.addEventListener(
+  'wheel',
+  e => {
+    if (!editorAudio.buffer) return;
+    e.preventDefault();
+    const janela = editorAudio.fimVisivel - editorAudio.inicioVisivel;
+    if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY))
+      moverOnda(((e.deltaX || e.deltaY) / canvasOnda.clientWidth) * janela);
+    else zoomOnda(pixelParaTempo(e.offsetX), e.deltaY > 0 ? 1.25 : 0.8);
+  },
+  { passive: false }
+);
+function zoomOnda(t, f) {
+  if (!editorAudio.buffer) return;
+  const d = editorAudio.buffer.duration;
+  const janela = limitar((editorAudio.fimVisivel - editorAudio.inicioVisivel) * f, 0.02, d);
+  const k = (t - editorAudio.inicioVisivel) / (editorAudio.fimVisivel - editorAudio.inicioVisivel);
+  const v0 = limitar(t - k * janela, 0, d - janela);
+  editorAudio.inicioVisivel = v0;
+  editorAudio.fimVisivel = v0 + janela;
+  desenharOnda();
+}
+function moverOnda(dt) {
+  const d = editorAudio.buffer.duration;
+  const janela = editorAudio.fimVisivel - editorAudio.inicioVisivel;
+  const v0 = limitar(editorAudio.inicioVisivel + dt, 0, d - janela);
+  editorAudio.inicioVisivel = v0;
+  editorAudio.fimVisivel = v0 + janela;
+  desenharOnda();
+}
+$('#zIn').onclick = () =>
+  zoomOnda(
+    editorAudio.selecao
+      ? (editorAudio.selecao[0] + editorAudio.selecao[1]) / 2
+      : editorAudio.cursor,
+    0.6
+  );
+$('#zOut').onclick = () => zoomOnda(editorAudio.cursor, 1.6);
+$('#zFit').onclick = () => {
+  if (!editorAudio.buffer) return;
+  editorAudio.inicioVisivel = 0;
+  editorAudio.fimVisivel = editorAudio.buffer.duration;
+  desenharOnda();
+};
+$('#zSel').onclick = () => {
+  if (!editorAudio.selecao) return aviso('Nada selecionado');
+  const margem = (editorAudio.selecao[1] - editorAudio.selecao[0]) * 0.06;
+  editorAudio.inicioVisivel = Math.max(0, editorAudio.selecao[0] - margem);
+  editorAudio.fimVisivel = Math.min(editorAudio.buffer.duration, editorAudio.selecao[1] + margem);
+  desenharOnda();
+};
+['#aeA', '#aeB'].forEach(id =>
+  $(id).addEventListener('change', () => {
+    if (!editorAudio.buffer) return;
+    const a = lerTempo($('#aeA').value);
+    const b = lerTempo($('#aeB').value);
+    const d = editorAudio.buffer.duration;
+    if (a != null && b != null && b > a) editorAudio.selecao = [limitar(a, 0, d), limitar(b, 0, d)];
+    else if (a != null && b == null) editorAudio.selecao = [limitar(a, 0, d), d];
+    atualizarSelecaoUI();
+    desenharOnda();
+  })
+);
+
+// ===== Reprodução =====
+function tocar() {
+  if (!editorAudio.buffer) return;
+  const c = obterContextoAudio();
+  c.resume();
+  parar();
+  const d = editorAudio.buffer.duration;
+  let a = editorAudio.cursor;
+  let e = d;
+  if (editorAudio.selecao) {
+    const [s0, s1] = editorAudio.selecao;
+    if (editorAudio.repetir || a < s0 || a >= s1 - 0.01) a = s0;
+    e = s1;
+  }
+  if (a >= e - 5e-3) a = editorAudio.selecao ? editorAudio.selecao[0] : 0;
+  const origem = montarCadeiaEfeitos(c, editorAudio.buffer, editorAudio.efeitos, c.destination);
+  const ls = editorAudio.selecao ? editorAudio.selecao[0] : 0;
+  const le = editorAudio.selecao ? editorAudio.selecao[1] : d;
+  if (editorAudio.repetir) {
+    origem.loop = true;
+    origem.loopStart = ls;
+    origem.loopEnd = le;
+    origem.start(0, a);
+  } else origem.start(0, a, e - a);
+  editorAudio.fonte = origem;
+  editorAudio.tocando = true;
+  editorAudio.inicioRelogio = c.currentTime;
+  editorAudio.inicioTrecho = a;
+  editorAudio.velocidade = editorAudio.efeitos.rate;
+  mostrarIconePlay(true);
+  origem.onended = () => {
+    if (editorAudio.fonte !== origem) return;
+    editorAudio.tocando = false;
+    editorAudio.fonte = null;
+    mostrarIconePlay(false);
+    cancelAnimationFrame(editorAudio.quadro);
+    editorAudio.cursor = a;
+    atualizarSelecaoUI();
+    desenharOnda();
+  };
+  const tick = () => {
+    if (!editorAudio.tocando) return;
+    let t =
+      editorAudio.inicioTrecho +
+      (c.currentTime - editorAudio.inicioRelogio) * editorAudio.velocidade;
+    if (editorAudio.repetir && t > le) t = ls + ((t - ls) % (le - ls));
+    editorAudio.cursor = Math.min(t, d);
+    $('#aeTime').textContent = formatarTempo(editorAudio.cursor);
+    if (
+      editorAudio.cursor > editorAudio.fimVisivel ||
+      editorAudio.cursor < editorAudio.inicioVisivel
+    ) {
+      const velocidade = editorAudio.fimVisivel - editorAudio.inicioVisivel;
+      editorAudio.inicioVisivel = limitar(
+        editorAudio.cursor - velocidade * 0.05,
+        0,
+        d - velocidade
+      );
+      editorAudio.fimVisivel = editorAudio.inicioVisivel + velocidade;
+    }
+    desenharOnda();
+    editorAudio.quadro = requestAnimationFrame(tick);
+  };
+  tick();
+}
+function parar() {
+  if (editorAudio.fonte) {
+    const s = editorAudio.fonte;
+    editorAudio.fonte = null;
+    s.onended = null;
+    try {
+      s.stop();
+    } catch {}
+  }
+  editorAudio.tocando = false;
+  cancelAnimationFrame(editorAudio.quadro);
+  mostrarIconePlay(false);
+}
+const tocarOuPausar = () => {
+  if (editorAudio.tocando) {
+    parar();
+    desenharOnda();
+  } else tocar();
+};
+$('#aePlay').onclick = tocarOuPausar;
+$('#aeStopB').onclick = () => {
+  parar();
+  editorAudio.cursor = editorAudio.selecao ? editorAudio.selecao[0] : 0;
+  atualizarSelecaoUI();
+  desenharOnda();
+};
+$('#aeLoop').onclick = () => {
+  editorAudio.repetir = !editorAudio.repetir;
+  $('#aeLoop').setAttribute('aria-pressed', editorAudio.repetir);
+  if (editorAudio.tocando) tocar();
+};
+
+// ===== Operações de edição =====
+function intervaloSelecionado() {
+  const b = editorAudio.buffer;
+  const sr = b.sampleRate;
+  return editorAudio.selecao
+    ? [Math.round(editorAudio.selecao[0] * sr), Math.round(editorAudio.selecao[1] * sr), true]
+    : [0, b.length, false];
+}
+const pedirSelecao = () => {
+  aviso('Selecione um trecho arrastando na onda', 'err');
+  return null;
+};
+function paraCadaCanal(o, s0, s1, acao) {
+  for (let c = 0; c < o.numberOfChannels; c++) acao(o.getChannelData(c), s0, s1);
+}
+function ajustarGanho(f) {
+  return b => {
+    const o = clonarBuffer(b);
+    const [s0, s1] = intervaloSelecionado();
+    paraCadaCanal(o, s0, s1, d => {
+      for (let i = s0; i < s1; i++) d[i] *= f;
+    });
+    return o;
+  };
+}
+
+// Cada operação recebe o buffer atual e devolve um novo (ou { buffer, selecao, fit }).
+// Nada é alterado no lugar, por isso o desfazer é só uma pilha de buffers.
+const OPERACOES = {
+  trim: b => {
+    if (!editorAudio.selecao) return pedirSelecao();
+    const [s0, s1] = intervaloSelecionado();
+    return { buf: recortarBuffer(b, s0, s1), fit: 1 };
+  },
+  del: b => {
+    if (!editorAudio.selecao) return pedirSelecao();
+    const [s0, s1] = intervaloSelecionado();
+    const partes = [];
+    if (s0 > 0) partes.push(recortarBuffer(b, 0, s0));
+    if (s1 < b.length) partes.push(recortarBuffer(b, s1, b.length));
+    if (!partes.length) {
+      aviso('Não dá para apagar tudo', 'err');
+      return null;
+    }
+    editorAudio.cursor = s0 / b.sampleRate;
+    return { buf: juntarBuffers(partes), sel: null };
+  },
+  silence: b => {
+    if (!editorAudio.selecao) return pedirSelecao();
+    const o = clonarBuffer(b);
+    const [s0, s1] = intervaloSelecionado();
+    paraCadaCanal(o, s0, s1, d => d.fill(0, s0, s1));
+    return o;
+  },
+  fadein: b => {
+    const o = clonarBuffer(b);
+    let [s0, s1, has] = intervaloSelecionado();
+    if (!has) s1 = Math.min(b.length, b.sampleRate * 3);
+    const n = s1 - s0;
+    paraCadaCanal(o, s0, s1, d => {
+      for (let i = 0; i < n; i++) d[s0 + i] *= Math.sin(((i / n) * Math.PI) / 2);
+    });
+    return o;
+  },
+  fadeout: b => {
+    const o = clonarBuffer(b);
+    let [s0, s1, has] = intervaloSelecionado();
+    if (!has) s0 = Math.max(0, b.length - b.sampleRate * 3);
+    const n = s1 - s0;
+    paraCadaCanal(o, s0, s1, d => {
+      for (let i = 0; i < n; i++) d[s0 + i] *= Math.cos(((i / n) * Math.PI) / 2);
+    });
+    return o;
+  },
+  norm: b => {
+    const o = clonarBuffer(b);
+    const [s0, s1] = intervaloSelecionado();
+    let pico = 0;
+    paraCadaCanal(o, s0, s1, d => {
+      for (let i = s0; i < s1; i++) {
+        const v = Math.abs(d[i]);
+        if (v > pico) pico = v;
+      }
+    });
+    if (pico < 1e-5) {
+      aviso('Trecho em silêncio', 'err');
+      return null;
+    }
+    const f = 0.98 / pico;
+    paraCadaCanal(o, s0, s1, d => {
+      for (let i = s0; i < s1; i++) d[i] *= f;
+    });
+    return o;
+  },
+  louder: ajustarGanho(Math.pow(10, 3 / 20)),
+  quieter: ajustarGanho(Math.pow(10, -3 / 20)),
+  rev: b => {
+    const o = clonarBuffer(b);
+    const [s0, s1] = intervaloSelecionado();
+    paraCadaCanal(o, s0, s1, d => d.subarray(s0, s1).reverse());
+    return o;
+  },
+  mono: b => {
+    if (b.numberOfChannels < 2) {
+      aviso('Já está em mono');
+      return null;
+    }
+    const o = novoBuffer(1, b.length, b.sampleRate);
+    const d = o.getChannelData(0);
+    const k = b.numberOfChannels;
+    for (let c = 0; c < k; c++) {
+      const x = b.getChannelData(c);
+      for (let i = 0; i < x.length; i++) d[i] += x[i] / k;
+    }
+    return o;
+  },
+  strip: b => {
+    const limiar = Math.pow(10, -45 / 20);
+    let a = b.length;
+    let z = 0;
+    for (let c = 0; c < b.numberOfChannels; c++) {
+      const d = b.getChannelData(c);
+      for (let i = 0; i < a; i++)
+        if (Math.abs(d[i]) > limiar) {
+          a = i;
+          break;
+        }
+      for (let i = d.length - 1; i > z; i--)
+        if (Math.abs(d[i]) > limiar) {
+          z = i;
+          break;
+        }
+    }
+    if (z <= a) {
+      aviso('Só tem silêncio', 'err');
+      return null;
+    }
+    const margem = (b.sampleRate * 0.05) | 0;
+    return {
+      buf: recortarBuffer(b, Math.max(0, a - margem), Math.min(b.length, z + margem)),
+      fit: 1,
+    };
+  },
+  paste: b => {
+    if (!editorAudio.areaTransferencia) {
+      aviso('Copie um trecho antes', 'err');
+      return null;
+    }
+    const at = Math.round(editorAudio.cursor * b.sampleRate);
+    const partes = [];
+    if (at > 0) partes.push(recortarBuffer(b, 0, at));
+    partes.push(editorAudio.areaTransferencia);
+    if (at < b.length) partes.push(recortarBuffer(b, at, b.length));
+    return {
+      buf: juntarBuffers(partes),
+      sel: [editorAudio.cursor, editorAudio.cursor + editorAudio.areaTransferencia.duration],
+    };
+  },
+};
+function executarOperacao(op) {
+  if (!editorAudio.buffer) return aviso('Carregue um áudio primeiro', 'err');
+  if (op === 'undo') {
+    if (!editorAudio.desfazer.length) return aviso('Nada para desfazer');
+    editorAudio.refazer.push(editorAudio.buffer);
+    return definirAudio(editorAudio.desfazer.pop(), false);
+  }
+  if (op === 'redo') {
+    if (!editorAudio.refazer.length) return aviso('Nada para refazer');
+    editorAudio.desfazer.push(editorAudio.buffer);
+    return definirAudio(editorAudio.refazer.pop(), false);
+  }
+  if (op === 'copy') {
+    if (!editorAudio.selecao) return pedirSelecao();
+    const [s0, s1] = intervaloSelecionado();
+    editorAudio.areaTransferencia = recortarBuffer(editorAudio.buffer, s0, s1);
+    return aviso(`Copiado: ${formatarTempo(editorAudio.areaTransferencia.duration)}`);
+  }
+  const r = OPERACOES[op](editorAudio.buffer);
+  if (!r) return;
+  const saida = r instanceof AudioBuffer ? { buf: r } : r;
+  editorAudio.desfazer.push(editorAudio.buffer);
+  if (editorAudio.desfazer.length > 25) editorAudio.desfazer.shift();
+  editorAudio.refazer = [];
+  definirAudio(saida.buf, !!saida.fit);
+  if ('sel' in saida) {
+    editorAudio.selecao = saida.sel;
+    atualizarSelecaoUI();
+    desenharOnda();
+  }
+}
+$('#aeOps').onclick = e => {
+  const b = e.target.closest('[data-op]');
+  if (b) executarOperacao(b.dataset.op);
+};
+
+// ===== Efeitos prontos =====
+const PREDEFINICOES = {
+  Normal: {},
+  'Slowed + reverb': { rate: 0.85, bass: 3, treble: -2, rev: 42 },
+  'Sped up': { rate: 1.18, treble: 1 },
+  Nightcore: { rate: 1.3, treble: 2 },
+  'Grave pesado': { bass: 12, vol: -4 },
+  '8D': { d8: true, rev: 22 },
+  'Rádio antigo': { tel: true, rev: 6, vol: -2 },
+  'Eco de show': { rev: 65, bass: 2 },
+};
+$('#presets').innerHTML = Object.keys(PREDEFINICOES)
+  .map(k => `<button data-pre="${escaparHtml(k)}">${escaparHtml(k)}</button>`)
+  .join('');
+$('#presets').onclick = e => {
+  const b = e.target.closest('[data-pre]');
+  if (!b) return;
+  editorAudio.efeitos = { ...EFEITOS_NEUTROS, ...PREDEFINICOES[b.dataset.pre] };
+  atualizarEfeitosUI();
+  aplicarEfeitosAoVivo();
+};
+function atualizarEfeitosUI() {
+  $$('[data-fx]').forEach(el => {
+    const k = el.dataset.fx;
+    const v = editorAudio.efeitos[k];
+    if (el.type === 'checkbox') el.checked = !!v;
+    else {
+      el.value = v;
+      const o = el.nextElementSibling;
+      o.textContent =
+        k === 'rate'
+          ? (+v).toFixed(2) + '×'
+          : k === 'rev'
+            ? v + '%'
+            : (v > 0 ? '+' : '') + v + ' dB';
+    }
+  });
+  $$('#presets button').forEach(b =>
+    b.classList.toggle(
+      'on',
+      JSON.stringify({ ...EFEITOS_NEUTROS, ...PREDEFINICOES[b.dataset.pre] }) ===
+        JSON.stringify(editorAudio.efeitos)
+    )
+  );
+}
+let timerEfeitos;
+function aplicarEfeitosAoVivo() {
+  clearTimeout(timerEfeitos);
+  timerEfeitos = setTimeout(() => {
+    if (editorAudio.tocando) {
+      const t = editorAudio.cursor;
+      parar();
+      editorAudio.cursor = t;
+      tocar();
+    }
+  }, 110);
+}
+$$('[data-fx]').forEach(el =>
+  el.addEventListener('input', () => {
+    editorAudio.efeitos[el.dataset.fx] = el.type === 'checkbox' ? el.checked : +el.value;
+    atualizarEfeitosUI();
+    aplicarEfeitosAoVivo();
+  })
+);
+$('#fxReset').onclick = () => {
+  editorAudio.efeitos = { ...EFEITOS_NEUTROS };
+  atualizarEfeitosUI();
+  aplicarEfeitosAoVivo();
+};
+$('#fxBake').onclick = async () => {
+  if (!editorAudio.buffer) return aviso('Carregue um áudio primeiro', 'err');
+  if (semEfeitos(editorAudio.efeitos)) return aviso('Nenhum efeito ativo');
+  aviso('Aplicando efeitos…');
+  const r = await aplicarEfeitos(editorAudio.buffer, editorAudio.efeitos);
+  editorAudio.desfazer.push(editorAudio.buffer);
+  editorAudio.refazer = [];
+  editorAudio.efeitos = { ...EFEITOS_NEUTROS };
+  atualizarEfeitosUI();
+  definirAudio(r, true);
+  aviso('Efeitos aplicados');
+};
+atualizarEfeitosUI();
+
+// ===== Exportar áudio =====
+$('#aeExp').onclick = async () => {
+  if (!editorAudio.buffer) return aviso('Carregue um áudio primeiro', 'err');
+  const formato = $('input[name=aefmt]:checked').value;
+  const soSelecao = $('input[name=aerng]:checked').value === 'sel';
+  if (soSelecao && !editorAudio.selecao) return pedirSelecao();
+  const botao = $('#aeExp');
+  const barra = $('#aeProg');
+  botao.disabled = true;
+  botao.textContent = 'Processando…';
+  barra.style.width = '5%';
+  try {
+    const [s0, s1] = soSelecao ? intervaloSelecionado() : [0, editorAudio.buffer.length];
+    const trecho = soSelecao ? recortarBuffer(editorAudio.buffer, s0, s1) : editorAudio.buffer;
+    const saida = await aplicarEfeitos(trecho, editorAudio.efeitos);
+    barra.style.width = '25%';
+    const blob =
+      formato === 'mp3'
+        ? await codificarMp3(
+            saida,
+            +$('#aeKbps').value,
+            p => (barra.style.width = 25 + p * 75 + '%')
+          )
+        : codificarWav(saida);
+    barra.style.width = '100%';
+    const nomeArquivo = ($('#aeName').value.trim() || editorAudio.nome) + '.' + formato;
+    entregar(blob, nomeArquivo);
+    aviso(`Exportado: ${nomeArquivo} · ${formatarBytes(blob.size)}`);
+  } catch (e) {
+    aviso(e.message || 'Falha ao exportar', 'err');
+  }
+  botao.disabled = false;
+  botao.textContent = 'Exportar';
+  setTimeout(() => (barra.style.width = '0'), 1200);
+};
+$('#aeRing').onclick = () => {
+  if (!editorAudio.buffer) return aviso('Carregue um áudio primeiro', 'err');
+  const d = editorAudio.buffer.duration;
+  const a = Math.min(editorAudio.cursor, Math.max(0, d - 30));
+  editorAudio.selecao = [a, Math.min(d, a + 30)];
+  $('input[name=aerng][value=sel]').checked = true;
+  $('input[name=aefmt][value=mp3]').checked = true;
+  atualizarSelecaoUI();
+  desenharOnda();
+  aviso('30 s selecionados. Ajuste, dê um Fade out e exporte.');
+};
+$('#aeFile').onchange = e => {
+  const f = e.target.files[0];
+  if (f) carregarAudio(f, f.name);
+  e.target.value = '';
+};
+
+// Gravação pelo microfone.
+let gravadorMic = null;
+$('#aeMic').onclick = async () => {
+  const b = $('#aeMic');
+  if (gravadorMic) {
+    gravadorMic.stop();
+    return;
+  }
+  try {
+    const st = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const r = new MediaRecorder(st);
+    const ch = [];
+    r.ondataavailable = e => ch.push(e.data);
+    r.onstop = () => {
+      st.getTracks().forEach(t => t.stop());
+      gravadorMic = null;
+      b.textContent = 'Gravar microfone';
+      b.classList.remove('p');
+      carregarAudio(new Blob(ch, { type: r.mimeType }), 'gravacao');
+    };
+    r.start();
+    gravadorMic = r;
+    b.textContent = 'Parar gravação';
+    b.classList.add('p');
+  } catch {
+    aviso('Microfone bloqueado ou indisponível', 'err');
+  }
+};
+
+// ===== Editor de vídeo =====
+const editorVideo = {
+  arquivo: null,
+  endereco: '',
+  nome: 'video',
+  inicio: 0,
+  fim: 0,
+  duracao: 0,
+  versaoMiniaturas: 0,
+  cancelar: false,
+  ultimo: null,
+  previa: false,
+};
+const player = $('#vid');
+// Vídeo gravado pelo MediaRecorder vem sem duração (Infinity). Pular para o fim força o cálculo.
+async function duracaoReal(v) {
+  if (isFinite(v.duration) && v.duration > 0) return v.duration;
+  const p = aguardarEvento(v, 'durationchange');
+  v.currentTime = 10000000;
+  await Promise.race([p, esperar(3000)]);
+  const d = v.duration;
+  v.currentTime = 0;
+  return isFinite(d) ? d : 0;
+}
+async function carregarVideo(blob, nome = 'video', trecho) {
+  if (editorVideo.endereco) URL.revokeObjectURL(editorVideo.endereco);
+  editorVideo.arquivo = blob;
+  editorVideo.nome = semExtensao(nome);
+  editorVideo.endereco = URL.createObjectURL(blob);
+  const p = aguardarEvento(player, 'loadedmetadata');
+  player.src = editorVideo.endereco;
+  $('#veEmpty').hidden = true;
+  try {
+    await p;
+  } catch {
+    aviso('Não consegui abrir este vídeo', 'err');
+    return;
+  }
+  editorVideo.duracao = await duracaoReal(player);
+  const d = editorVideo.duracao;
+  editorVideo.inicio = limitar(trecho?.[0] ?? 0, 0, d);
+  editorVideo.fim = limitar(trecho?.[1] ?? d, editorVideo.inicio + 0.05, d);
+  if (editorVideo.fim <= editorVideo.inicio) editorVideo.fim = d;
+  $('#veInfo').textContent =
+    `${editorVideo.nome} · ${player.videoWidth}×${player.videoHeight} · ${formatarTempo(d, 1)}`;
+  player.currentTime = editorVideo.inicio;
+  atualizarLinhaDoTempo();
+  gerarMiniaturas();
+}
+function atualizarLinhaDoTempo() {
+  if (!editorVideo.duracao) return;
+  const p = t => (t / editorVideo.duracao) * 100 + '%';
+  Object.assign($('#rng').style, {
+    left: p(editorVideo.inicio),
+    width: ((editorVideo.fim - editorVideo.inicio) / editorVideo.duracao) * 100 + '%',
+  });
+  $('#hA').style.left = p(editorVideo.inicio);
+  $('#hB').style.left = p(editorVideo.fim);
+  $('#ph').style.left = p(player.currentTime || 0);
+  $('#veA').value = formatarTempo(editorVideo.inicio);
+  $('#veB').value = formatarTempo(editorVideo.fim);
+  $('#veLen').textContent = '(' + formatarTempo(editorVideo.fim - editorVideo.inicio) + ')';
+}
+
+// Tira algumas capturas do vídeo para a faixa da linha do tempo.
+async function gerarMiniaturas() {
+  const id = ++editorVideo.versaoMiniaturas;
+  const cv = $('#strip');
+  const W = cv.clientWidth;
+  const H = cv.clientHeight;
+  if (!W) return;
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = W * dpr;
+  cv.height = H * dpr;
+  const g = cv.getContext('2d');
+  const v = document.createElement('video');
+  v.muted = true;
+  v.setAttribute('playsinline', '');
+  v.preload = 'auto';
+  v.src = editorVideo.endereco;
+  try {
+    await aguardarComLimite(v, 'loadeddata', 6000);
+  } catch {
+    return;
+  }
+  const fw = H * dpr * (v.videoWidth / v.videoHeight || 16 / 9);
+  const n = Math.ceil((W * dpr) / fw);
+  for (let i = 0; i < n; i++) {
+    if (id !== editorVideo.versaoMiniaturas) break;
+    v.currentTime = Math.min(
+      editorVideo.duracao - 0.05,
+      (((i + 0.5) * fw) / (W * dpr)) * editorVideo.duracao
+    );
+    try {
+      await aguardarComLimite(v, 'seeked', 3000);
+    } catch {
+      break;
+    }
+    g.drawImage(v, i * fw, 0, fw, H * dpr);
+  }
+  v.removeAttribute('src');
+  v.load();
+}
+const linhaDoTempo = $('#tl');
+let arrasteTimeline = null;
+const posicaoParaTempo = e => {
+  const r = linhaDoTempo.getBoundingClientRect();
+  return limitar((e.clientX - r.left) / r.width, 0, 1) * editorVideo.duracao;
+};
+linhaDoTempo.addEventListener('pointerdown', e => {
+  if (!editorVideo.duracao) return;
+  linhaDoTempo.setPointerCapture(e.pointerId);
+  arrasteTimeline = e.target.id === 'hA' ? 'a' : e.target.id === 'hB' ? 'b' : 'seek';
+  if (arrasteTimeline === 'seek') {
+    player.currentTime = posicaoParaTempo(e);
+    atualizarLinhaDoTempo();
+  }
+});
+linhaDoTempo.addEventListener('pointermove', e => {
+  if (!arrasteTimeline) return;
+  const t = posicaoParaTempo(e);
+  if (arrasteTimeline === 'a') {
+    editorVideo.inicio = Math.min(t, editorVideo.fim - 0.05);
+    player.currentTime = editorVideo.inicio;
+  } else if (arrasteTimeline === 'b') {
+    editorVideo.fim = Math.max(t, editorVideo.inicio + 0.05);
+    player.currentTime = editorVideo.fim;
+  } else player.currentTime = t;
+  atualizarLinhaDoTempo();
+});
+linhaDoTempo.addEventListener('pointerup', () => (arrasteTimeline = null));
+const acompanharReproducao = () => {
+  $('#ph').style.left = (player.currentTime / editorVideo.duracao) * 100 + '%';
+  if (editorVideo.previa && player.currentTime >= editorVideo.fim) {
+    player.pause();
+    editorVideo.previa = false;
+  }
+  if (!player.paused) requestAnimationFrame(acompanharReproducao);
+};
+player.addEventListener('play', () => editorVideo.duracao && acompanharReproducao());
+player.addEventListener('seeked', () => editorVideo.duracao && atualizarLinhaDoTempo());
+const marcarPonto = w => {
+  if (!editorVideo.duracao) return;
+  const t = player.currentTime;
+  if (w === 'a') editorVideo.inicio = Math.min(t, editorVideo.fim - 0.05);
+  else editorVideo.fim = Math.max(t, editorVideo.inicio + 0.05);
+  atualizarLinhaDoTempo();
+};
+$('#veMarkA').onclick = () => marcarPonto('a');
+$('#veMarkB').onclick = () => marcarPonto('b');
+$('#vePrev').onclick = () => {
+  if (!editorVideo.duracao) return;
+  player.currentTime = editorVideo.inicio;
+  editorVideo.previa = true;
+  player.play();
+};
+['#veA', '#veB'].forEach(id =>
+  $(id).addEventListener('change', () => {
+    const a = lerTempo($('#veA').value);
+    const b = lerTempo($('#veB').value);
+    if (a != null) editorVideo.inicio = limitar(a, 0, editorVideo.duracao);
+    if (b != null) editorVideo.fim = limitar(b, 0, editorVideo.duracao);
+    if (editorVideo.fim <= editorVideo.inicio)
+      editorVideo.fim = Math.min(editorVideo.duracao, editorVideo.inicio + 1);
+    atualizarLinhaDoTempo();
+  })
+);
+$('#veFile').onchange = e => {
+  const f = e.target.files[0];
+  if (f) carregarVideo(f, f.name);
+  e.target.value = '';
+};
+
+// Formatos que o MediaRecorder sabe gravar, em ordem de preferência (MP4 primeiro).
+const FORMATOS_VIDEO = [
+  ['mp4', 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'MP4 (H.264)'],
+  ['mp4', 'video/mp4;codecs=avc1,opus', 'MP4 (H.264)'],
+  ['mp4', 'video/mp4', 'MP4'],
+  ['webm', 'video/webm;codecs=vp9,opus', 'WebM (VP9)'],
+  ['webm', 'video/webm;codecs=vp8,opus', 'WebM (VP8)'],
+  ['webm', 'video/webm', 'WebM'],
+];
+const formatosSuportados = [];
+if (window.MediaRecorder) {
+  for (const m of FORMATOS_VIDEO)
+    if (MediaRecorder.isTypeSupported(m[1]) && !formatosSuportados.some(x => x[0] === m[0]))
+      formatosSuportados.push(m);
+}
+$('#veFmt').innerHTML = formatosSuportados.length
+  ? formatosSuportados.map((m, i) => `<option value="${i}">${m[2]}</option>`).join('')
+  : '<option>indisponível</option>';
+const progressoVideo = p => ($('#veProg').style.width = (limitar(p, 0, 1) * 100).toFixed(1) + '%');
+function travarEditorVideo(on, mensagem) {
+  ['#veExport', '#veGif', '#veAudio', '#veFrame'].forEach(s => ($(s).disabled = on));
+  $('#veCancel').hidden = !on;
+  if (mensagem) $('#veMsg').textContent = mensagem;
+  if (!on) setTimeout(() => progressoVideo(0), 1500);
+}
+$('#veCancel').onclick = () => {
+  editorVideo.cancelar = true;
+};
+$('#veLast').onclick = () => {
+  if (editorVideo.ultimo) carregarVideo(editorVideo.ultimo.arquivo, editorVideo.ultimo.nome);
+};
+const aguardarComLimite = (el, ev, ms = 8000) =>
+  Promise.race([
+    aguardarEvento(el, ev),
+    esperar(ms).then(() => {
+      throw new Error('o navegador não liberou o vídeo');
+    }),
+  ]);
+
+// No iPhone, vídeo só carrega depois de um play() disparado por toque. Por isso o vídeo
+// oculto é criado e "destravado" logo no clique, antes de qualquer await.
+function criarVideoOculto() {
+  const v = document.createElement('video');
+  v.setAttribute('playsinline', '');
+  v.playsInline = true;
+  v.preload = 'auto';
+  v.muted = true;
+  v.src = editorVideo.endereco;
+  const p = v.play();
+  p && p.catch(() => {});
+  return v;
+}
+async function prepararVideo(v, mudo) {
+  if (v.readyState < 2) await aguardarComLimite(v, 'loadeddata');
+  v.pause();
+  v.muted = !!mudo;
+  return v;
+}
+
+// Exporta o corte desenhando cada quadro num canvas e gravando com MediaRecorder.
+// É em tempo real: 10 s de corte levam 10 s (divididos pela velocidade escolhida).
+$('#veExport').onclick = async () => {
+  if (!editorVideo.arquivo) return aviso('Abra um vídeo primeiro', 'err');
+  if (!formatosSuportados.length)
+    return aviso('Este navegador não grava vídeo. Use Chrome ou Edge.', 'err');
+  const [ext, mime] = formatosSuportados[+$('#veFmt').value];
+  const fit = $('#veFit').value;
+  const res = $('#veRes').value;
+  const fps = +$('#veFps').value;
+  const velocidade = +$('#veSpd').value;
+  const semAudio = $('#veMute').checked;
+  let v = criarVideoOculto();
+  let ac = null;
+  if (!semAudio) {
+    try {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      ac.resume();
+    } catch {}
+  }
+  travarEditorVideo(true, 'Preparando…');
+  editorVideo.cancelar = false;
+  try {
+    await prepararVideo(v, semAudio);
+    const vw = v.videoWidth;
+    const vh = v.videoHeight;
+    const short = res === 'orig' ? Math.min(vw, vh) : +res;
+    let W;
+    let H;
+    if (fit === 'orig') {
+      const sc = Math.min(1, short / Math.min(vw, vh));
+      W = vw * sc;
+      H = vh * sc;
+    } else if (fit === 'sq') {
+      W = H = short;
+    } else {
+      W = short;
+      H = (short * 16) / 9;
+    }
+    W = Math.round(W / 2) * 2;
+    H = Math.round(H / 2) * 2;
+    const cv = document.createElement('canvas');
+    cv.width = W;
+    cv.height = H;
+    const g = cv.getContext('2d');
+    const sm = document.createElement('canvas');
+    sm.width = Math.max(8, (W / 24) | 0);
+    sm.height = Math.max(8, (H / 24) | 0);
+    const sg = sm.getContext('2d');
+    const fitDraw = (ctx, w, h, cover) => {
+      const s = cover ? Math.max(w / vw, h / vh) : Math.min(w / vw, h / vh);
+      const dw = vw * s;
+      const dh = vh * s;
+      ctx.drawImage(v, (w - dw) / 2, (h - dh) / 2, dw, dh);
+    };
+    const draw = () => {
+      if (fit === 'orig') g.drawImage(v, 0, 0, W, H);
+      else if (fit === 'vblur') {
+        fitDraw(sg, sm.width, sm.height, 1);
+        g.imageSmoothingQuality = 'high';
+        g.drawImage(sm, 0, 0, W, H);
+        g.fillStyle = 'rgba(0,0,0,.32)';
+        g.fillRect(0, 0, W, H);
+        fitDraw(g, W, H, 0);
+      } else fitDraw(g, W, H, 1);
+    };
+    const stream = cv.captureStream(fps);
+    if (ac) {
+      try {
+        const s = ac.createMediaElementSource(v);
+        const d = ac.createMediaStreamDestination();
+        s.connect(d);
+        d.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+      } catch {}
+    }
+    const gravador = new MediaRecorder(stream, {
+      mimeType: mime,
+      videoBitsPerSecond: Math.round(limitar(W * H * fps * 0.1, 1500000, 14000000)),
+    });
+    const pedacos = [];
+    const stopped = new Promise(r => (gravador.onstop = r));
+    gravador.ondataavailable = e => e.data.size && pedacos.push(e.data);
+    v.currentTime = editorVideo.inicio;
+    await aguardarComLimite(v, 'seeked');
+    draw();
+    v.playbackRate = velocidade;
+    gravador.start(400);
+    await v.play();
+    $('#veMsg').textContent = 'Gravando o corte em tempo real…';
+    await new Promise(res2 => {
+      let done = false;
+      const fin = () => {
+        if (!done) {
+          done = true;
+          res2();
+        }
+      };
+      v.addEventListener('ended', fin, { once: true });
+      const step = () => {
+        if (done) return;
+        if (editorVideo.cancelar || v.currentTime >= editorVideo.fim) {
+          fin();
+          return;
+        }
+        draw();
+        progressoVideo(
+          (v.currentTime - editorVideo.inicio) / (editorVideo.fim - editorVideo.inicio)
+        );
+        requestAnimationFrame(step);
+      };
+      step();
+    });
+    v.pause();
+    draw();
+    gravador.stop();
+    await stopped;
+    stream.getTracks().forEach(t => t.stop());
+    if (editorVideo.cancelar) {
+      travarEditorVideo(false, 'Exportação cancelada.');
+      return;
+    }
+    const blob = new Blob(pedacos, { type: mime.split(';')[0] });
+    const nomeArquivo = `${editorVideo.nome}_${fit === 'orig' ? 'corte' : fit === 'sq' ? 'quadrado' : 'vertical'}.${ext}`;
+    editorVideo.ultimo = { arquivo: blob, nome: nomeArquivo };
+    $('#veLast').hidden = false;
+    progressoVideo(1);
+    entregar(blob, nomeArquivo);
+    travarEditorVideo(false, `Pronto: ${nomeArquivo} · ${formatarBytes(blob.size)} · ${W}×${H}`);
+  } catch (e) {
+    travarEditorVideo(false, 'Falhou: ' + (e.message || e));
+  } finally {
+    ac && ac.close();
+    if (v) {
+      v.removeAttribute('src');
+      v.load();
+    }
+  }
+};
+
+// ===== GIF =====
+// Paleta fixa 6×7×6 (252 cores) com pontilhado Bayer: rápido e sem biblioteca externa.
+const PALETA_GIF = [];
+for (let r = 0; r < 6; r++)
+  for (let g = 0; g < 7; g++)
+    for (let b = 0; b < 6; b++) PALETA_GIF.push([r * 51, Math.round(g * 42.5), b * 51]);
+const MATRIZ_BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => v / 16 - 0.47);
+function quantizarQuadro(d, W, H) {
+  const o = new Uint8Array(W * H);
+  for (let y = 0, p = 0; y < H; y++)
+    for (let x = 0; x < W; x++, p++) {
+      const t = MATRIZ_BAYER[(y & 3) * 4 + (x & 3)];
+      const i = p * 4;
+      let r = d[i] + t * 51;
+      let g = d[i + 1] + t * 42.5;
+      let b = d[i + 2] + t * 51;
+      r = r < 0 ? 0 : r > 255 ? 255 : r;
+      g = g < 0 ? 0 : g > 255 ? 255 : g;
+      b = b < 0 ? 0 : b > 255 ? 255 : b;
+      o[p] = Math.round(r / 51) * 42 + Math.round(g / 42.5) * 6 + Math.round(b / 51);
+    }
+  return o;
+}
+
+// Buffer de bytes que cresce sozinho.
+class EscritorBytes {
+  constructor() {
+    this.a = new Uint8Array(1 << 20);
+    this.n = 0;
+  }
+  b(x) {
+    if (this.n >= this.a.length) {
+      const z = new Uint8Array(this.a.length * 2);
+      z.set(this.a);
+      this.a = z;
+    }
+    this.a[this.n++] = x;
+  }
+  w(x) {
+    this.b(x & 255);
+    this.b((x >> 8) & 255);
+  }
+  s(t) {
+    for (const c of t) this.b(c.charCodeAt(0));
+  }
+  out() {
+    return this.a.subarray(0, this.n);
+  }
+}
+
+// Compressão LZW do GIF. A "geração" evita zerar a tabela inteira a cada reset do dicionário.
+const lzwCodigos = new Int16Array(1 << 20);
+const lzwGeracao = new Uint32Array(1 << 20);
+let lzwGeracaoAtual = 0;
+function comprimirLzw(o, px, mcs) {
+  o.b(mcs);
+  const clear = 1 << mcs;
+  const eoi = clear + 1;
+  let next = eoi + 1;
+  let size = mcs + 1;
+  let cur2 = 0;
+  let sh = 0;
+  let blk = new Uint8Array(255);
+  let bn = 0;
+  lzwGeracaoAtual++;
+  const byte = x => {
+    blk[bn++] = x;
+    if (bn === 255) {
+      o.b(255);
+      for (let i = 0; i < 255; i++) o.b(blk[i]);
+      bn = 0;
+    }
+  };
+  const emit = c => {
+    cur2 |= c << sh;
+    sh += size;
+    while (sh >= 8) {
+      byte(cur2 & 255);
+      cur2 >>>= 8;
+      sh -= 8;
+    }
+  };
+  emit(clear);
+  let prev = px[0];
+  for (let i = 1; i < px.length; i++) {
+    const k = px[i];
+    const key = (prev << 8) | k;
+    if (lzwGeracao[key] === lzwGeracaoAtual) {
+      prev = lzwCodigos[key];
+      continue;
+    }
+    emit(prev);
+    if (next === 4096) {
+      emit(clear);
+      next = eoi + 1;
+      size = mcs + 1;
+      lzwGeracaoAtual++;
+    } else {
+      if (next >= 1 << size) size++;
+      lzwGeracao[key] = lzwGeracaoAtual;
+      lzwCodigos[key] = next++;
+    }
+    prev = k;
+  }
+  emit(prev);
+  emit(eoi);
+  if (sh > 0) byte(cur2 & 255);
+  if (bn) {
+    o.b(bn);
+    for (let i = 0; i < bn; i++) o.b(blk[i]);
+  }
+  o.b(0);
+}
+function codificarGif(quadros, W, H, atraso) {
+  const o = new EscritorBytes();
+  o.s('GIF89a');
+  o.w(W);
+  o.w(H);
+  o.b(247);
+  o.b(0);
+  o.b(0);
+  for (let i = 0; i < 256; i++) {
+    const c = PALETA_GIF[i] || [0, 0, 0];
+    o.b(c[0]);
+    o.b(c[1]);
+    o.b(c[2]);
+  }
+  o.b(33);
+  o.b(255);
+  o.b(11);
+  o.s('NETSCAPE2.0');
+  o.b(3);
+  o.b(1);
+  o.w(0);
+  o.b(0);
+  for (const f of quadros) {
+    o.b(33);
+    o.b(249);
+    o.b(4);
+    o.b(0);
+    o.w(atraso);
+    o.b(0);
+    o.b(0);
+    o.b(44);
+    o.w(0);
+    o.w(0);
+    o.w(W);
+    o.w(H);
+    o.b(0);
+    comprimirLzw(o, f, 8);
+  }
+  o.b(59);
+  return o.out();
+}
+
+// Para o GIF, pulamos quadro a quadro (seek) em vez de tocar: sai exato e mais rápido.
+$('#veGif').onclick = async () => {
+  if (!editorVideo.arquivo) return aviso('Abra um vídeo primeiro', 'err');
+  const fps = +$('#gifFps').value;
+  const Wd = +$('#gifW').value;
+  let n = Math.max(1, Math.round((editorVideo.fim - editorVideo.inicio) * fps));
+  if (n > 360) {
+    n = 360;
+    aviso('GIF limitado a 360 quadros (início do trecho)');
+  }
+  let v = criarVideoOculto();
+  travarEditorVideo(true, 'Capturando quadros…');
+  editorVideo.cancelar = false;
+  try {
+    await prepararVideo(v, true);
+    const W = Math.round(Wd / 2) * 2;
+    const H = Math.max(2, Math.round((Wd * v.videoHeight) / v.videoWidth / 2) * 2);
+    const cv = document.createElement('canvas');
+    cv.width = W;
+    cv.height = H;
+    const g = cv.getContext('2d', { willReadFrequently: true });
+    const fr = [];
+    for (let i = 0; i < n && !editorVideo.cancelar; i++) {
+      v.currentTime = Math.min(editorVideo.fim, editorVideo.inicio + i / fps);
+      await aguardarComLimite(v, 'seeked');
+      g.drawImage(v, 0, 0, W, H);
+      fr.push(quantizarQuadro(g.getImageData(0, 0, W, H).data, W, H));
+      progressoVideo((i / n) * 0.85);
+      if (i % 4 === 3) await esperar(0);
+    }
+    if (editorVideo.cancelar) {
+      travarEditorVideo(false, 'GIF cancelado.');
+      return;
+    }
+    $('#veMsg').textContent = 'Codificando GIF…';
+    await esperar(30);
+    const bytes = codificarGif(fr, W, H, Math.round(100 / fps));
+    const blob = new Blob([bytes], { type: 'image/gif' });
+    progressoVideo(1);
+    entregar(blob, editorVideo.nome + '.gif');
+    travarEditorVideo(
+      false,
+      `GIF pronto: ${fr.length} quadros · ${W}×${H} · ${formatarBytes(blob.size)}`
+    );
+  } catch (e) {
+    travarEditorVideo(false, 'Falhou: ' + (e.message || e));
+  } finally {
+    if (v) {
+      v.removeAttribute('src');
+      v.load();
+    }
+  }
+};
+$('#veAudio').onclick = async () => {
+  if (!editorVideo.arquivo) return aviso('Abra um vídeo primeiro', 'err');
+  abrirAba('audio');
+  if (
+    (await carregarAudio(editorVideo.arquivo, editorVideo.nome)) &&
+    (editorVideo.inicio > 0 || editorVideo.fim < editorVideo.duracao - 0.01)
+  ) {
+    editorAudio.selecao = [
+      editorVideo.inicio,
+      Math.min(editorVideo.fim, editorAudio.buffer.duration),
+    ];
+    atualizarSelecaoUI();
+    desenharOnda();
+  }
+};
+$('#veFrame').onclick = () => {
+  if (!editorVideo.arquivo) return aviso('Abra um vídeo primeiro', 'err');
+  const c = document.createElement('canvas');
+  c.width = player.videoWidth;
+  c.height = player.videoHeight;
+  c.getContext('2d').drawImage(player, 0, 0);
+  c.toBlob(
+    b =>
+      baixarArquivo(
+        b,
+        `${editorVideo.nome}_${formatarTempo(player.currentTime).replace(/[:.]/g, '-')}.png`
+      ),
+    'image/png'
+  );
+};
+
+// ===== Atalhos, colar e arrastar arquivos =====
+document.addEventListener('keydown', e => {
+  const t = e.target;
+  const tag = t.tagName;
+  if (/INPUT|TEXTAREA|SELECT/.test(tag) || t.isContentEditable) return;
+  if (tag === 'BUTTON' && (e.code === 'Space' || e.key === 'Enter')) return;
+  const mod = e.ctrlKey || e.metaKey;
+  const k = e.key.toLowerCase();
+  if (abaAtual === 'audio' && editorAudio.buffer) {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      tocarOuPausar();
+    } else if ((k === 'delete' || k === 'backspace') && editorAudio.selecao) {
+      e.preventDefault();
+      executarOperacao('del');
+    } else if (mod && k === 'z') {
+      e.preventDefault();
+      executarOperacao(e.shiftKey ? 'redo' : 'undo');
+    } else if (mod && k === 'y') {
+      e.preventDefault();
+      executarOperacao('redo');
+    } else if (mod && k === 'a') {
+      e.preventDefault();
+      editorAudio.selecao = [0, editorAudio.buffer.duration];
+      atualizarSelecaoUI();
+      desenharOnda();
+    } else if (mod && k === 'c' && editorAudio.selecao) {
+      executarOperacao('copy');
+    } else if (!mod && k === 'l') $('#aeLoop').click();
+    else if (k === 'escape') {
+      editorAudio.selecao = null;
+      atualizarSelecaoUI();
+      desenharOnda();
+    }
+  }
+  if (abaAtual === 'video' && editorVideo.duracao) {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      player.paused ? player.play() : player.pause();
+    } else if (k === 'i') marcarPonto('a');
+    else if (k === 'o') marcarPonto('b');
+    else if (k === 'arrowleft' || k === 'arrowright') {
+      e.preventDefault();
+      player.pause();
+      player.currentTime = limitar(
+        player.currentTime + (k === 'arrowleft' ? -1 : 1) * (e.shiftKey ? 1 : 1 / 30),
+        0,
+        editorVideo.duracao
+      );
+      atualizarLinhaDoTempo();
+    }
+  }
+});
+document.addEventListener('paste', e => {
+  const tag = e.target.tagName;
+  if (/INPUT|TEXTAREA/.test(tag)) return;
+  const t = e.clipboardData?.getData('text') || '';
+  const us = extrairLinks(t);
+  if (us.length) {
+    e.preventDefault();
+    abrirAba('baixar');
+    campoLink.value = us.join('\n');
+    aoDigitarLink();
+    iniciarDownloads();
+    return;
+  }
+  if (abaAtual === 'audio' && editorAudio.areaTransferencia) {
+    e.preventDefault();
+    executarOperacao('paste');
+  }
+});
+function abrirArquivoSolto(f) {
+  if (/^video\//.test(f.type) || /\.(mp4|webm|mov|mkv|m4v)$/i.test(f.name)) {
+    if (abaAtual === 'audio') carregarAudio(f, f.name);
+    else {
+      abrirAba('video');
+      carregarVideo(f, f.name);
+    }
+  } else if (/^audio\//.test(f.type) || /\.(mp3|wav|ogg|opus|m4a|flac|aac)$/i.test(f.name)) {
+    abrirAba('audio');
+    carregarAudio(f, f.name);
+  } else aviso('Formato não reconhecido', 'err');
+}
+addEventListener('dragover', e => {
+  e.preventDefault();
+  $('#deck').classList.add('drag');
+});
+addEventListener('dragleave', e => {
+  if (!e.relatedTarget) $('#deck').classList.remove('drag');
+});
+addEventListener('drop', e => {
+  e.preventDefault();
+  $('#deck').classList.remove('drag');
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) return abrirArquivoSolto(f);
+  const us = extrairLinks(
+    e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text')
+  );
+  if (us.length) {
+    abrirAba('baixar');
+    campoLink.value = us.join('\n');
+    aoDigitarLink();
+  }
+});
+
+// Redesenha onda e miniaturas quando a tela muda de tamanho (girar o celular, por exemplo).
+let timerResize;
+addEventListener('resize', () => {
+  clearTimeout(timerResize);
+  timerResize = setTimeout(() => {
+    if (abaAtual === 'audio') desenharOnda();
+    if (abaAtual === 'video' && editorVideo.duracao) {
+      atualizarLinhaDoTempo();
+      gerarMiniaturas();
+    }
+  }, 150);
+});
+
+// ===== Início =====
+abrirAba(location.hash.slice(1) || 'baixar');
+aoDigitarLink();
+montarComandoYtdlp();
+atualizarStatusInstancia();
+</script>
+</body>
+</html>
