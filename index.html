@@ -188,6 +188,10 @@ body.busy .lamp {
 .inst.bad i {
   background: var(--err);
 }
+.inst.wait i {
+  background: var(--amb);
+  animation: blink 1s steps(2) infinite;
+}
 
 /* ===== Estrutura ===== */
 main {
@@ -1565,7 +1569,7 @@ input[type="range"] {
 
 <!-- ===== Config ===== -->
 <section class="panel" id="p-config" role="tabpanel">
-  <div class="sec-h"><div><h2>Config</h2><p>O PUXA conversa com a API do <a href="https://github.com/imputnet/cobalt" target="_blank" rel="noopener">cobalt</a>, que é código aberto. Com a sua própria instância, os downloads saem direto daqui, sem anúncio e sem fila.</p></div></div>
+  <div class="sec-h"><div><h2>Config</h2><p>Os downloads passam por um servidor com o <a href="https://github.com/imputnet/cobalt" target="_blank" rel="noopener">cobalt</a>, que é código aberto. O servidor padrão já vem configurado, ninguém precisa instalar nada. Aqui você pode trocar por outro ou usar o seu.</p></div></div>
   <div class="grid2">
     <div class="box">
       <h3>Instâncias (uma por linha, em ordem de prioridade)</h3>
@@ -1579,13 +1583,14 @@ input[type="range"] {
       <div class="hl" id="instRes"></div>
     </div>
     <div class="box">
-      <h3>Sua instância em 2 minutos</h3>
+      <h3>Opcional: servidor no seu computador</h3>
+      <p class="small muted" style="margin:0 0 12px">Útil se o servidor padrão estiver lento ou se o YouTube bloquear o servidor na nuvem. Sua internet de casa costuma ser bloqueada bem menos.</p>
       <ol class="steps">
         <li>Instale o Docker Desktop (Windows, Mac ou Linux).</li>
         <li>Rode no terminal:<pre class="cmd sm" id="dock">docker run -d --name cobalt --restart unless-stopped -p 9000:9000 -e API_URL=http://localhost:9000/ ghcr.io/imputnet/cobalt:latest</pre><button class="btn sm" data-copy="#dock">Copiar</button></li>
-        <li>Deixe <code>http://localhost:9000</code> na lista e clique em Testar. Pronto.</li>
+        <li>Coloque <code>http://localhost:9000</code> no topo da lista ao lado e clique em Testar.</li>
       </ol>
-      <p class="small muted">No site publicado (HTTPS), o navegador só aceita <code>http://localhost</code> ou instâncias com <code>https://</code>. Para usar no celular, exponha a instância com HTTPS (ex. Cloudflare Tunnel) e use esse endereço nos dois lugares. Se o navegador perguntar sobre acesso à rede local, permita. Se o YouTube pedir login, configure cookies na instância (veja a doc do cobalt). Sem instância? Quando um download falha aparecem atalhos para o cobalt.tools e para a aba yt-dlp.</p>
+      <p class="small muted">Se o navegador perguntar sobre acesso à rede local, permita. Quando um download falha, aparecem atalhos para o cobalt.tools e para a aba yt-dlp.</p>
     </div>
   </div>
 </section>
@@ -1630,10 +1635,15 @@ const armazenamento = {
   },
 };
 
+// Servidor de download que todo visitante usa, sem instalar nada.
+// É o cobalt publicado no Render pelo render.yaml deste repositório. Se o Render der
+// outro endereço no deploy, troque aqui.
+const SERVIDOR_PADRAO = 'https://puxe-cobalt.onrender.com';
+
 // Configuração padrão. As chaves batem com os atributos data-s do HTML
 // e com os campos da API do cobalt (vq = qualidade, af = formato de áudio, ab = kbps...).
 const PADRAO = {
-  instances: ['http://localhost:9000'],
+  instances: [SERVIDOR_PADRAO],
   apiKey: '',
   authType: 'Api-Key',
   mode: 'auto',
@@ -1652,6 +1662,11 @@ const PADRAO = {
 };
 const config = Object.assign({}, PADRAO, armazenamento.get('s', {}));
 const salvarConfig = () => armazenamento.set('s', config);
+// Quem abriu uma versão antiga ficou com o localhost salvo como padrão. Troca pelo servidor novo.
+if (config.instances.join() === 'http://localhost:9000') {
+  config.instances = [SERVIDOR_PADRAO];
+  salvarConfig();
+}
 const formatarBytes = n =>
   n < 1024
     ? n + ' B'
@@ -2093,7 +2108,8 @@ function montarPedido(url, modo, min) {
 }
 async function pedirAoCobalt(instancia, corpo) {
   const controle = new AbortController();
-  const t = setTimeout(() => controle.abort(), 30000);
+  // 90 s porque o servidor grátis pode estar dormindo e leva até 1 minuto para acordar.
+  const t = setTimeout(() => controle.abort(), 90000);
   const h = { Accept: 'application/json', 'Content-Type': 'application/json' };
   if (config.apiKey)
     h.Authorization = (config.authType === 'Bearer' ? 'Bearer ' : 'Api-Key ') + config.apiKey;
@@ -2191,14 +2207,27 @@ async function atualizarStatusInstancia() {
     n.innerHTML = `Este site está em HTTPS e o navegador bloqueia <code>${escaparHtml(f)}</code>. Use <code>http://localhost:9000</code> no PC, uma instância com <code>https://</code> ou o arquivo baixado. <a data-tab="config">Ver Config →</a>`;
     return;
   }
-  const r = await testarInstancia(f, 4500);
-  b.className = 'inst ' + (r.ok ? 'ok' : 'bad');
-  b.lastChild.innerHTML = `<span class="ih">${escaparHtml(dominio(f))} · </span>${r.ok ? 'v' + escaparHtml(r.v) : 'offline'}`;
+  // O mesmo teste serve para acordar o servidor. Se demorar, avisamos o visitante.
+  b.className = 'inst wait';
+  b.lastChild.innerHTML = `<span class="ih">${escaparHtml(dominio(f))} · </span>ligando…`;
   b.title = dominio(f);
+  const avisoLento = setTimeout(() => {
+    n.hidden = false;
+    n.textContent =
+      'Ligando o servidor de download. Quando ninguém usa por um tempo ele dorme e leva até 1 minuto para acordar. Pode colar o link enquanto isso.';
+  }, 2500);
+  aquecimento = testarInstancia(f, 90000);
+  const r = await aquecimento;
+  clearTimeout(avisoLento);
+  b.className = 'inst ' + (r.ok ? 'ok' : 'bad');
+  b.lastChild.innerHTML = `<span class="ih">${escaparHtml(dominio(f))} · </span>${r.ok ? 'online' : 'offline'}`;
   n.hidden = !!r.ok;
   if (!r.ok)
-    n.innerHTML = `A instância <code>${escaparHtml(dominio(f))}</code> não respondeu. <a data-tab="config">Suba a sua em 2 minutos →</a> ou use o editor e o yt-dlp, que funcionam sem ela.`;
+    n.innerHTML =
+      'O servidor de download não respondeu agora. Tente de novo em instantes. O editor de áudio, o de vídeo e o gerador do yt-dlp funcionam mesmo assim.';
 }
+// Promessa do primeiro contato com o servidor. Os downloads esperam por ela antes de pedir.
+let aquecimento = null;
 
 // fetch lendo o corpo aos pedaços, para mostrar progresso e velocidade.
 async function baixarComProgresso(url, sinal, aoProgredir) {
@@ -2302,8 +2331,23 @@ const limparAcoes = tarefa => {
 // O cobalt responde de três jeitos: tunnel/redirect (um arquivo), picker (galeria
 // de fotos e vídeos, comum no TikTok e Instagram) ou local-processing (faixas separadas).
 async function executarTarefa(tarefa) {
-  atualizarCartao(tarefa, 'analisando', 'Consultando a instância…');
-  const { r } = await consultarInstancias(tarefa.url, tarefa.modo);
+  atualizarCartao(tarefa, 'analisando', 'Consultando o servidor…');
+  const lento = setTimeout(
+    () =>
+      atualizarCartao(
+        tarefa,
+        'analisando',
+        'Ligando o servidor de download (até 1 minuto na primeira vez)…'
+      ),
+    5000
+  );
+  let r;
+  try {
+    await aquecimento;
+    ({ r } = await consultarInstancias(tarefa.url, tarefa.modo));
+  } finally {
+    clearTimeout(lento);
+  }
   if (tarefa.cancelada) return;
   if (r.status === 'picker') {
     tarefa.itens = r.picker || [];

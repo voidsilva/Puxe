@@ -1,6 +1,6 @@
 # PUXA
 
-Baixe vídeo e áudio do YouTube, TikTok, Instagram e de mais 20 plataformas, corte o trecho que quiser e edite tudo no navegador. É um arquivo HTML só: nada para instalar e nenhum arquivo passa por servidor nosso.
+Baixe vídeo e áudio do YouTube, TikTok, Instagram e de mais 20 plataformas, corte o trecho que quiser e edite tudo no navegador. Quem usa não instala nada: é só abrir o link.
 
 **Acesse:** https://voidsilva.github.io/Puxe/
 
@@ -42,13 +42,31 @@ Baixe vídeo e áudio do YouTube, TikTok, Instagram e de mais 20 plataformas, co
 
 ## Como funciona
 
-O navegador não deixa um site baixar direto do YouTube ou do Instagram. Por isso o PUXA conversa com uma instância do [cobalt](https://github.com/imputnet/cobalt), um projeto de código aberto que busca o arquivo e devolve para cá. As instâncias públicas exigem autenticação, então o jeito é rodar a sua (leva dois minutos).
+O navegador não deixa um site baixar direto do YouTube ou do Instagram. Por isso o download passa por um servidor com o [cobalt](https://github.com/imputnet/cobalt), um projeto de código aberto que busca o arquivo e devolve para o navegador. Esse servidor fica no [Render](https://render.com) e já vem configurado no site, então o visitante não precisa instalar nada.
 
-Todo o resto roda no seu aparelho, sem instância nenhuma: editor de áudio, editor de vídeo, GIF, conversão para MP3 e o gerador do yt-dlp.
+Todo o resto roda no aparelho de quem usa: editor de áudio, editor de vídeo, GIF, conversão para MP3 e o gerador do yt-dlp.
 
-## Subindo sua instância do cobalt
+## Publicando o servidor (uma vez só)
 
-Com o [Docker](https://www.docker.com/products/docker-desktop/) instalado:
+Isso é só para quem mantém o site. O arquivo [`render.yaml`](render.yaml) já descreve tudo.
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/voidsilva/Puxe)
+
+1. Clique no botão acima e entre no Render com a conta do GitHub.
+2. Confirme o deploy do serviço `puxe-cobalt` no plano Free.
+3. Quando terminar, confira se o endereço do serviço é `https://puxe-cobalt.onrender.com`. Se o Render der outro nome, troque o `API_URL` no `render.yaml` e o `SERVIDOR_PADRAO` no `index.html`.
+
+O que esperar do plano grátis:
+
+- **Dorme quando ninguém usa.** Depois de 15 minutos parado, o servidor desliga e leva cerca de 1 minuto para voltar. O site já começa a acordar o servidor assim que abre e avisa o visitante enquanto isso. O plano pago mais barato não dorme.
+- **YouTube pode bloquear.** O YouTube bloqueia de vez em quando servidores de data center. Quando isso acontecer, configure cookies seguindo a [documentação do cobalt](https://github.com/imputnet/cobalt/blob/main/docs/run-an-instance.md). TikTok, Instagram, X e as outras plataformas costumam funcionar normalmente.
+- **Só o site usa o servidor.** O `render.yaml` libera o servidor apenas para `voidsilva.github.io`, para outros sites não gastarem a sua cota.
+
+Se o servidor falhar, o próprio PUXA oferece abrir o link no cobalt.tools ou gerar o comando do yt-dlp.
+
+## Servidor no seu computador (opcional)
+
+Útil para desenvolver ou quando o YouTube bloquear o servidor na nuvem, já que internet de casa é bloqueada bem menos. Com o [Docker](https://www.docker.com/products/docker-desktop/) instalado:
 
 ```bash
 docker run -d --name cobalt --restart unless-stopped \
@@ -57,18 +75,13 @@ docker run -d --name cobalt --restart unless-stopped \
   ghcr.io/imputnet/cobalt:latest
 ```
 
-Depois abra o PUXA, vá em **Config**, deixe `http://localhost:9000` na lista e clique em **Testar instâncias**.
+Depois vá em **Config** no PUXA, coloque `http://localhost:9000` no topo da lista e clique em **Testar instâncias**. Se o navegador perguntar sobre acesso à rede local, permita.
 
-Alguns detalhes que fazem diferença:
+## Navegadores e uso offline
 
-- **Site publicado (HTTPS):** o navegador só aceita `http://localhost` ou instâncias com `https://`. Se ele perguntar sobre acesso à rede local, permita.
-- **No celular:** exponha a instância com HTTPS (Cloudflare Tunnel, por exemplo) e use esse endereço no `API_URL` e na Config.
-- **YouTube:** às vezes ele pede login para a instância. Nesse caso, configure cookies seguindo a [documentação do cobalt](https://github.com/imputnet/cobalt/blob/main/docs/run-an-instance.md).
-- **Sem instância:** quando um download falha, o PUXA oferece abrir o link no cobalt.tools ou gerar o comando do yt-dlp.
+Funciona melhor no Chrome, Edge e Firefox. No Safari (iPhone incluso) também roda, mas a exportação de vídeo depende do suporte do aparelho ao MediaRecorder.
 
-## Usando sem internet
-
-Baixe o `index.html` e abra no navegador. Funciona melhor no Chrome, Edge e Firefox. No Safari (iPhone incluso) também roda, mas a exportação de vídeo depende do suporte do aparelho ao MediaRecorder. A única coisa que precisa de internet é a primeira exportação em MP3, que carrega o codificador.
+Dá para baixar o `index.html` e abrir direto do computador: os editores funcionam sem internet. Só o download de redes sociais precisa do site publicado (ou de um servidor no seu computador), e a primeira exportação em MP3 precisa de internet para carregar o codificador.
 
 ## Atalhos
 
