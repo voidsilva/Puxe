@@ -26,8 +26,9 @@ module.exports = async (req, res) => {
     return res.status(400).json({ erro: 'Link do YouTube inválido.' });
   }
 
+  // Até 720p por padrão: o arquivo fica bem menor e chega bem mais rápido.
   // Limite de 1080p e 60 minutos para a conta não estourar.
-  const altura = Math.min(1080, parseInt(qualidade, 10) || 1080);
+  const altura = Math.min(1080, parseInt(qualidade, 10) || 720);
   const entrada = {
     videoUrls: [url],
     format: formato === 'audio' ? 'audio' : 'video',
@@ -38,8 +39,9 @@ module.exports = async (req, res) => {
   };
 
   try {
+    // memory=4096: mais CPU e rede para o robô da Apify, o que encurta o download.
     const resposta = await fetch(
-      `https://api.apify.com/v2/acts/${ATOR}/run-sync-get-dataset-items?token=${token}&timeout=280`,
+      `https://api.apify.com/v2/acts/${ATOR}/run-sync-get-dataset-items?token=${token}&timeout=280&memory=4096`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entrada) }
     );
     if (!resposta.ok) {

@@ -2349,7 +2349,8 @@ const limparAcoes = tarefa => {
 const API_YOUTUBE = 'https://puxe-seven.vercel.app';
 async function baixarDoYoutube(tarefa) {
   atualizarCartao(tarefa, 'analisando', 'Preparando o vídeo do YouTube (pode levar até 1 minuto)…');
-  const qualidade = config.vq === 'max' ? '1080' : config.vq;
+  // No YouTube, "máxima" vira 720p: na API paga, arquivo menor chega bem mais rápido.
+  const qualidade = config.vq === 'max' ? '720' : config.vq;
   const params = new URLSearchParams({
     url: tarefa.url,
     formato: tarefa.modo === 'audio' ? 'audio' : 'video',
