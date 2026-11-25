@@ -35,6 +35,8 @@ module.exports = async (req, res) => {
     quality: `${altura}p`,
     videoCodec: 'h264',
     audioFormat: 'mp3',
+    // Áudio em qualidade alta: a padrão (standard) sai com 96 kbps.
+    audioQuality: 'high',
     maxMinutes: 60,
   };
 
